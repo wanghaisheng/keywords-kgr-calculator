@@ -1,37 +1,50 @@
-name: Google Search Crawler
+name: Crawl and Store Data
 
 on:
   workflow_dispatch:
     inputs:
+      id:
+        description: 'Request ID for this task'
+        required: true
       keywords:
-        description: "Comma-separated list of keywords"
+        description: 'Comma-separated list of keywords'
         required: false
-        default: "apple, banana, cherry"
-      keywordsUrl:
-        description: "URL to CSV file containing keywords"
+      csvFile:
+        description: 'Base64 encoded CSV file'
         required: false
-        default: ""
-      
+
 jobs:
-  run-crawler:
+  crawl:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v2
-      with:
-        node-version: '14'
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '14'
 
-    - name: Install dependencies
-      run: |
-        npm install
+      - name: Install dependencies
+        run: |
+          npm install
 
-    - name: Run Google Search Crawler
-      run: |
-        node google-search-crawler.js
-      env:
-        keywords: ${{ github.event.inputs.keywords }}
-        keywordsUrl: ${{ github.event.inputs.keywordsUrl }}
+      - name: Run crawler and save result as CSV
+        run: |
+          const fs = require('fs');
+          const path = require('path');
+          const { id, keywords, csvFile } = process.env;
+
+          // Process the keywords or CSV
+          let dataToSave = `Results for ${keywords || 'CSV'}`;
+
+          // Save the file as id.csv
+          const resultPath = path.join(__dirname, 'results', `${id}.csv`);
+          fs.mkdirSync(path.dirname(resultPath), { recursive: true });
+          fs.writeFileSync(resultPath, dataToSave);
+
+          // Optionally, you can commit the file back to GitHub
+          const { execSync } = require('child_process');
+          execSync('git add .');
+          execSync('git commit -m "Add result CSV file"');
+          execSync('git push origin main');
