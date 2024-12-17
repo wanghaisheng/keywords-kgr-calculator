@@ -37,12 +37,13 @@ async function startCrawler(keywords, id) {
       // Open search URL
       await page.goto(`https://www.google.com/search?q=intitle%3A%22${encodeURIComponent(keyword)}%22`);
       // Wait for Google's result stats
-      const visible = await page.getByRole('#result-stats').isVisible();
+      const visible = await page.locator('#result-stats').isVisible();
       if(visible){
         console.log('there is no stats showing at all')
         return 
       }
-
+      const t= await page.locator('#result-stats').allTextContents()
+      console.log('========',t)
       // Extract result count
       const resultStats = await page.$eval('#result-stats', el => el.textContent);
       const match = resultStats.match(/About ([\d,]+) results/);
