@@ -43,7 +43,7 @@ jobs:
       # Step 5: Run the crawler script
       - name: Run crawler
         run: |
-          node main.js "${{ inputs.id }}" "${{ inputs.keywords }}" "input.csv"
+          node main-crawlee-pl.js "${{ inputs.id }}" "${{ inputs.keywords }}" "input.csv"
 
       # Step 6: Commit and push results
       - name: Commit and push results
