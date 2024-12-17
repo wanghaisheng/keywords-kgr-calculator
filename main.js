@@ -35,7 +35,7 @@ async function startCrawler(keywords, id) {
 
         // Parse HTML response using cheerio
         const $ = cheerio.load(response.data);
-
+        console.log('raw html',response.data)
         // Extract the result stats from Google search page
         const resultStats = $('#result-stats').text();
         console.log(searchType,'raw result',resultStats)
