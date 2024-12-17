@@ -23,28 +23,30 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '14'
+          node-version: '18'
 
       - name: Install dependencies
         run: |
           npm install
 
-      - name: Run crawler and save result as CSV
+      - name: Decode Base64 CSV (if provided)
+        if: ${{ inputs.csvFile }}
         run: |
-          const fs = require('fs');
-          const path = require('path');
-          const { id, keywords, csvFile } = process.env;
+          echo "${{ inputs.csvFile }}" | base64 -d > input.csv
+        shell: bash
 
-          // Process the keywords or CSV
-          let dataToSave = `Results for ${keywords || 'CSV'}`;
+      - name: Run main.js crawler script
+        env:
+          INPUT_ID: ${{ inputs.id }}
+          INPUT_KEYWORDS: ${{ inputs.keywords }}
+          INPUT_CSV: ${{ inputs.csvFile && 'input.csv' || '' }}
+        run: |
+          node main.js "$INPUT_ID" "$INPUT_KEYWORDS" "$INPUT_CSV"
 
-          // Save the file as id.csv
-          const resultPath = path.join(__dirname, 'results', `${id}.csv`);
-          fs.mkdirSync(path.dirname(resultPath), { recursive: true });
-          fs.writeFileSync(resultPath, dataToSave);
-
-          // Optionally, you can commit the file back to GitHub
-          const { execSync } = require('child_process');
-          execSync('git add .');
-          execSync('git commit -m "Add result CSV file"');
-          execSync('git push origin main');
+      - name: Commit and Push Results
+        run: |
+          git config --local user.name "github-actions"
+          git config --local user.email "actions@github.com"
+          git add results/${{ inputs.id }}.csv
+          git commit -m "Add result file for ID ${{ inputs.id }}"
+          git push origin main
