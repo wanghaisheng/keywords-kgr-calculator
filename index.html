@@ -1,132 +1,104 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Search Crawler</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
 
-  <!-- SEO Meta Tags -->
-  <meta name="description" content="A mobile simulator designed to demonstrate mobile interface design.">
-  <meta name="keywords" content="mobile, simulator, mobile design, mobile app">
-  <meta name="author" content="Your Name or Company">
-  <meta http-equiv="Content-Language" content="en">
+        h1 {
+            text-align: center;
+        }
 
-  <!-- Canonical Link -->
-  <link rel="canonical" href="https://www.yourwebsite.com/pc-simulator" />
+        label {
+            font-size: 16px;
+            display: block;
+            margin: 10px 0 5px;
+        }
 
-  <!-- Open Graph for Social Media -->
-  <meta property="og:title" content="PC Simulator">
-  <meta property="og:description" content="A mobile simulator designed to demonstrate mobile interface design.">
-  <meta property="og:image" content="https://www.yourwebsite.com/pc-simulator-image.jpg">
-  <meta property="og:url" content="https://www.yourwebsite.com/pc-simulator">
-  <meta property="og:type" content="website">
+        input, textarea, button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
 
-  <!-- Twitter Card -->
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="PC Simulator">
-  <meta name="twitter:description" content="A mobile simulator designed to demonstrate mobile interface design.">
-  <meta name="twitter:image" content="https://www.yourwebsite.com/pc-simulator-image.jpg">
-  <meta name="twitter:creator" content="@yourtwitterhandle">
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+        }
 
-  <!-- Favicon -->
-  <link rel="icon" href="https://www.yourwebsite.com/favicon.ico" type="image/x-icon">
-
-  <!-- Google Analytics -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-XXXXX-Y"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag() {
-      dataLayer.push(arguments);
-    }
-    gtag('js', new Date());
-    gtag('config', 'UA-XXXXX-Y');
-  </script>
-
-  <!-- Microsoft Clarity -->
-  <script type="text/javascript">
-    (function(c,l,a,r,i,t,y) {
-      window.clarity=window.clarity||function(){(clarity.q=clarity.q||[]).push(arguments)};
-      clarity('set', 'anonymizeIP', true);
-      i=l.createElement('script');i.async=1;i.src=r;i.type='text/javascript';
-      t=l.getElementsByTagName('script')[0];t.parentNode.insertBefore(i,t);
-    })(document,window,'script','https://www.clarity.ms/tag/XXXXXX');
-  </script>
-
-  <title>PC Simulator</title>
-
-  <style>
-    /* Global Styles */
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background-color: #f0f0f0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      text-align: center;
-    }
-
-    .mobile-container {
-      width: 360px;
-      height: 640px;
-      border: 16px solid black;
-      border-radius: 16px;
-      background-color: #fff;
-      position: relative;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-
-    .content {
-      font-size: 1.2rem;
-      color: #333;
-    }
-
-    /* Adjustments for PC */
-    @media (min-width: 768px) {
-      .mobile-container {
-        width: 600px;
-        height: 1000px;
-      }
-
-      .content {
-        font-size: 1.5rem;
-      }
-    }
-
-    @media (min-width: 1024px) {
-      .mobile-container {
-        width: 800px;
-        height: 1400px;
-      }
-
-      .content {
-        font-size: 1.8rem;
-      }
-    }
-
-    /* Additional responsiveness for larger screens */
-    @media (min-width: 1200px) {
-      body {
-        justify-content: flex-start;
-      }
-
-      .mobile-container {
-        margin-top: 50px;
-      }
-    }
-  </style>
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
 </head>
-
 <body>
-  <div class="mobile-container">
-    <div class="content">
-      <p>Mobile Simulator Screen</p>
-      <p>PC Version: Adjusted for larger screens.</p>
-    </div>
-  </div>
-</body>
+    <h1>Google Search Crawler</h1>
+    <form id="crawlerForm">
+        <label for="keywords">Enter Keywords (Comma Separated)</label>
+        <input type="text" id="keywords" name="keywords" placeholder="e.g., apple, banana, cherry">
 
+        <label for="csvFile">OR Upload CSV File</label>
+        <input type="file" id="csvFile" name="csvFile" accept=".csv">
+
+        <button type="submit">Submit</button>
+    </form>
+
+    <p id="downloadLink" style="display:none;">Your results are ready! <a id="downloadFile" href="#">Download here</a></p>
+
+    <script>
+        document.getElementById("crawlerForm").addEventListener("submit", async function(event) {
+            event.preventDefault();
+
+            // Generate a unique ID for the request
+            const requestId = 'req-' + Math.random().toString(36).substring(2, 15);
+
+            const keywordsInput = document.getElementById("keywords").value.trim();
+            const csvFile = document.getElementById("csvFile").files[0];
+
+            let formData = new FormData();
+
+            formData.append("id", requestId); // Send the unique ID
+            if (keywordsInput) {
+                formData.append("keywords", keywordsInput);
+            }
+            if (csvFile) {
+                formData.append("csvFile", csvFile);
+            }
+
+            // Send the form data to the Cloudflare Worker endpoint
+            const response = await fetch("https://your-cloudflare-worker-endpoint", {
+                method: "POST",
+                body: formData,
+            });
+
+            if (response.ok) {
+                // Poll the result file until it's ready
+                const checkFileExistence = setInterval(async () => {
+                    const fileResponse = await fetch(`/check-file/${requestId}`);
+                    if (fileResponse.ok) {
+                        const fileUrl = await fileResponse.text();
+                        document.getElementById("downloadFile").href = fileUrl;
+                        document.getElementById("downloadLink").style.display = "block";
+                        clearInterval(checkFileExistence); // Stop polling once the file is available
+                    }
+                }, 5000); // Check every 5 seconds
+            } else {
+                alert("Error submitting the form.");
+            }
+        });
+    </script>
+</body>
 </html>
