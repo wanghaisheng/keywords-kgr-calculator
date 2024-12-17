@@ -35,6 +35,7 @@ async function startCrawler(keywords, id) {
 
         // Parse HTML response using cheerio
         const $ = cheerio.load(response.data);
+    const resultStatsDiv = $('#result-stats');
 
     if (resultStatsDiv.length > 0) {
       console.log('Result stats found:', resultStats);
