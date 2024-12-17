@@ -38,8 +38,11 @@ async function startCrawler(keywords, id) {
 
         // Extract the result stats from Google search page
         const resultStats = $('#result-stats').text();
+        console.log(searchType,'raw result',resultStats)
+        
         const match = resultStats.match(/About ([\d,]+) results/);
         const count = match ? parseInt(match[1].replace(/,/g, ''), 10) : 0;
+        console.log('clean result',count)
 
         results.push({ keyword, searchType, count });
         console.log(`Keyword: "${keyword}", Type: "${searchType}", Count: ${count}`);
