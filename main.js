@@ -27,10 +27,7 @@ async function startCrawler(keywords, id) {
   const retryList = [];
 
   const crawler = new PuppeteerCrawler({
-    proxyConfiguration: {
-      groups: ['DEFAULT'], // Adjust your proxy group if needed
-    },
-    requestHandler: async ({ page, request }) => {
+      requestHandler: async ({ page, request }) => {
       const { keyword, searchType } = request.userData;
 
       try {
