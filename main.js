@@ -1,5 +1,5 @@
-import { PlaywrightCrawler } from 'crawlee';
-import { firefox } from 'playwright';
+const { PlaywrightCrawler } = require('crawlee');
+const { firefox } = require('playwright');
 const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
@@ -28,12 +28,10 @@ async function startCrawler(keywords, id) {
   const retryList = [];
 
   const crawler = new PlaywrightCrawler({
-
-     launchContext: {
-        launcher: firefox,
-     },
-    
-      requestHandler: async ({ page, request }) => {
+    launchContext: {
+      launcher: firefox,
+    },
+    requestHandler: async ({ page, request }) => {
       const { keyword, searchType } = request.userData;
 
       try {
