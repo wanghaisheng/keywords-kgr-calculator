@@ -35,7 +35,12 @@ async function startCrawler(keywords, id) {
 
         // Parse HTML response using cheerio
         const $ = cheerio.load(response.data);
-        console.log('raw html',$('#result-stats'))
+
+    if (resultStatsDiv.length > 0) {
+      const resultStats = resultStatsDiv.text().replace(/\u00A0/g, ' ').trim();
+      console.log('Result stats found:', resultStats);
+        
+        
         // Extract the result stats from Google search page
         // const resultStats = $('#result-stats').text();
         const resultStats = $('#result-stats').text().replace(/\u00A0/g, ' ').trim();
@@ -48,6 +53,11 @@ async function startCrawler(keywords, id) {
 
         results.push({ keyword, searchType, count });
         console.log(`Keyword: "${keyword}", Type: "${searchType}", Count: ${count}`);
+    } else {
+      console.log('No result stats div found on the page.');
+    }
+
+      
       } catch (error) {
         console.error(`Error for "${keyword}" (${searchType}): ${error.message}`);
         retryList.push({ keyword, searchType }); // Retry on failure
