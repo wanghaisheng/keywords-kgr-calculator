@@ -59,8 +59,11 @@ async function startCrawler(keywords, id) {
         const response = await axios.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
         const $ = cheerio.load(response.data);
         const resultStats = $('#result-stats').text();
+        console.log(searchType,'raw result',resultStats)
         const match = resultStats.match(/About ([\d,]+) results/);
         const count = match ? parseInt(match[1].replace(/,/g, ''), 10) : 0;
+        console.log('clean result',count)
+        
         results.push({ keyword, searchType, count });
         console.log(`Retried Keyword: "${keyword}", Type: "${searchType}", Count: ${count}`);
       } catch (error) {
