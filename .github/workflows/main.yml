@@ -32,8 +32,7 @@ jobs:
       - name: Install dependencies
         run: |
           npm install playwright crawlee axios csv-parse
-          npx playwright install                                              ║
-
+          npx playwright install firefox
 
       # Step 4: Decode CSV file if provided
       - name: Decode CSV file
