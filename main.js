@@ -37,7 +37,6 @@ async function startCrawler(keywords, id) {
         const $ = cheerio.load(response.data);
 
     if (resultStatsDiv.length > 0) {
-      const resultStats = resultStatsDiv.text().replace(/\u00A0/g, ' ').trim();
       console.log('Result stats found:', resultStats);
         
         
