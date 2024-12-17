@@ -37,7 +37,7 @@ async function startCrawler(keywords, id) {
         const $ = cheerio.load(response.data);
         console.log('raw html',$('#result-stats'))
         // Extract the result stats from Google search page
-        const resultStats = $('#result-stats').text();
+        // const resultStats = $('#result-stats').text();
         const resultStats = $('#result-stats').text().replace(/\u00A0/g, ' ').trim();
 
         console.log(searchType,'raw result',resultStats)
