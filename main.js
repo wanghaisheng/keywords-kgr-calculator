@@ -1,4 +1,5 @@
-const { PuppeteerCrawler } = require('crawlee');
+import { PlaywrightCrawler } from 'crawlee';
+import { firefox } from 'playwright';
 const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
@@ -26,7 +27,12 @@ async function startCrawler(keywords, id) {
   const results = [];
   const retryList = [];
 
-  const crawler = new PuppeteerCrawler({
+  const crawler = new PlaywrightCrawler({
+
+     launchContext: {
+        launcher: firefox,
+     },
+    
       requestHandler: async ({ page, request }) => {
       const { keyword, searchType } = request.userData;
 
