@@ -1,52 +1,54 @@
-name: Crawl and Store Data
+name: Google Crawler
 
 on:
   workflow_dispatch:
     inputs:
       id:
-        description: 'Request ID for this task'
+        description: "Task ID for result naming"
         required: true
       keywords:
-        description: 'Comma-separated list of keywords'
-        required: false
+        description: "Comma-separated keywords"
+        required: true
       csvFile:
-        description: 'Base64 encoded CSV file'
+        description: "Base64-encoded CSV file (optional)"
         required: false
 
 jobs:
-  crawl:
+  run-crawler:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout code
+      # Step 1: Checkout the repository
+      - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Setup Node.js
+      # Step 2: Set up Node.js
+      - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          node-version: '20'  # Use Node.js version 20
 
+      # Step 3: Install dependencies manually
       - name: Install dependencies
         run: |
-          npm install
+          npm install puppeteer crawlee axios csv-parse
 
-      - name: Decode Base64 CSV (if provided)
-        if: ${{ inputs.csvFile }}
+      # Step 4: Decode CSV file if provided
+      - name: Decode CSV file
+        if: ${{ inputs.csvFile != '' }}
         run: |
           echo "${{ inputs.csvFile }}" | base64 -d > input.csv
-        shell: bash
 
-      - name: Run main.js crawler script
-        env:
-          INPUT_ID: ${{ inputs.id }}
-          INPUT_KEYWORDS: ${{ inputs.keywords }}
-          INPUT_CSV: ${{ inputs.csvFile && 'input.csv' || '' }}
+      # Step 5: Run the crawler script
+      - name: Run crawler
         run: |
-          node main.js "$INPUT_ID" "$INPUT_KEYWORDS" "$INPUT_CSV"
+          node main.js "${{ inputs.id }}" "${{ inputs.keywords }}" "input.csv"
 
-      - name: Commit and Push Results
+      # Step 6: Commit and push results
+      - name: Commit and push results
         run: |
-          git config --local user.name "github-actions"
-          git config --local user.email "actions@github.com"
-          git add results/${{ inputs.id }}.csv
-          git commit -m "Add result file for ID ${{ inputs.id }}"
-          git push origin main
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git add results/
+          git commit -m "Add results for task ID: ${{ inputs.id }}"
+          git push
