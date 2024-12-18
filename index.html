@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Google Search Crawler</title>
+    <title>Google Search kgr Crawler</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -12,17 +12,14 @@
             padding: 20px;
             background-color: #f9f9f9;
         }
-
         h1 {
             text-align: center;
         }
-
         label {
             font-size: 16px;
             display: block;
             margin: 10px 0 5px;
         }
-
         input, textarea, button {
             width: 100%;
             padding: 10px;
@@ -30,7 +27,6 @@
             border: 1px solid #ccc;
             border-radius: 4px;
         }
-
         button {
             background-color: #007bff;
             color: white;
@@ -38,9 +34,49 @@
             cursor: pointer;
             font-size: 16px;
         }
-
-        button:hover {
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        button:hover:not(:disabled) {
             background-color: #0056b3;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            display: none;
+        }
+        .status.processing {
+            display: block;
+            background-color: #fff3cd;
+            border: 1px solid #ffeeba;
+            color: #856404;
+        }
+        .status.success {
+            display: block;
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .status.error {
+            display: block;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .download-btn {
+            background-color: #28a745;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 10px;
+        }
+        .download-btn:hover {
+            background-color: #218838;
         }
     </style>
 </head>
@@ -49,98 +85,121 @@
     <form id="crawlerForm">
         <label for="keywords">Enter Keywords (Comma Separated)</label>
         <input type="text" id="keywords" name="keywords" placeholder="e.g., apple, banana, cherry">
-
+        
         <label for="csvFile">OR Upload CSV File</label>
         <input type="file" id="csvFile" name="csvFile" accept=".csv">
-
-        <button type="submit">Submit</button>
+        
+        <button type="submit" id="submitBtn">Submit</button>
     </form>
 
-    <p id="downloadLink" style="display:none;">Your results are ready! <a id="downloadFile" href="#">Download here</a></p>
+    <div id="statusMessage" class="status"></div>
+    <div id="downloadSection" style="display:none; text-align: center;">
+        <p>Your results are ready!</p>
+        <a id="downloadFile" class="download-btn" href="#" target="_blank">Download Results</a>
+    </div>
 
     <script>
-        document.getElementById("crawlerForm").addEventListener("submit", async function(event) {
+        const form = document.getElementById("crawlerForm");
+        const submitBtn = document.getElementById("submitBtn");
+        const statusMessage = document.getElementById("statusMessage");
+        const downloadSection = document.getElementById("downloadSection");
+        let pollInterval;
+
+        function updateStatus(message, type) {
+            statusMessage.textContent = message;
+            statusMessage.className = `status ${type}`;
+        }
+
+        async function checkFileStatus(requestId) {
+            try {
+                const fileResponse = await fetch(`https://keyword-kgr.v2ray-tokyo.workers.dev/check-file/${requestId}`);
+                const responseData = await fileResponse.text();
+                
+                try {
+                    // Try to parse as JSON first
+                    const jsonData = JSON.parse(responseData);
+                    if (jsonData.download_url) {
+                        clearInterval(pollInterval);
+                        document.getElementById("downloadFile").href = jsonData.download_url;
+                        downloadSection.style.display = "block";
+                        updateStatus("Processing complete!", "success");
+                        submitBtn.disabled = false;
+                        return true;
+                    }
+                } catch (e) {
+                    // If not JSON, check if it's a direct URL
+                    if (responseData.startsWith('http')) {
+                        clearInterval(pollInterval);
+                        document.getElementById("downloadFile").href = responseData;
+                        downloadSection.style.display = "block";
+                        updateStatus("Processing complete!", "success");
+                        submitBtn.disabled = false;
+                        return true;
+                    }
+                }
+                return false;
+            } catch (error) {
+                console.error("Error checking file status:", error);
+                return false;
+            }
+        }
+
+        form.addEventListener("submit", async function(event) {
             event.preventDefault();
-
-            // Generate a unique ID for the request
+            submitBtn.disabled = true;
+            downloadSection.style.display = "none";
+            
             const requestId = 'req-' + Math.random().toString(36).substring(2, 15);
-
             const keywordsInput = document.getElementById("keywords").value.trim();
             const csvFile = document.getElementById("csvFile").files[0];
 
-            let requestData = {};
-            let contentType = "";
-
-            if (keywordsInput) {
-                // When keywords are provided, send JSON
-                requestData.id = requestId;
-                requestData.keywords  =keywordsInput.trim()
-                // requestData.keywords = keywordsInput.split(',').map(keyword => keyword.trim());
-                contentType = "application/json"; // Set the content type to JSON
-            } else if (csvFile) {
-                // When a CSV file is uploaded, send FormData
-                let formData = new FormData();
-                formData.append("id", requestId); // Send the unique ID
-                formData.append("csvFile", csvFile);
-                contentType = "multipart/form-data"; // Let browser handle content type for FormData
-
-                // Send the form data to the Cloudflare Worker endpoint
-                try {
-                    const response = await fetch("https://keyword-kgr.v2ray-tokyo.workers.dev/", {
-                        method: "POST",
-                        body: formData,
-                    });
-
-                    if (response.ok) {
-                        // Poll the result file until it's ready
-                        const checkFileExistence = setInterval(async () => {
-                            const fileResponse = await fetch(`https://keyword-kgr.v2ray-tokyo.workers.dev/check-file/${requestId}`);
-                            if (fileResponse.ok) {
-                                const fileUrl = await fileResponse.text();
-                                document.getElementById("downloadFile").href = fileUrl;
-                                document.getElementById("downloadLink").style.display = "block";
-                                clearInterval(checkFileExistence); // Stop polling once the file is available
-                            }
-                        }, 5000); // Check every 5 seconds
-                    } else {
-                        alert("Error submitting the form.");
-                    }
-                } catch (error) {
-                    console.error("Error:", error);
-                    alert("An error occurred while submitting the form.");
-                }
+            if (!keywordsInput && !csvFile) {
+                updateStatus("Please enter keywords or upload a CSV file.", "error");
+                submitBtn.disabled = false;
                 return;
             }
 
-            // If keywords were provided, send JSON
-            if (contentType === "application/json") {
-                try {
-                    const response = await fetch("https://keyword-kgr.v2ray-tokyo.workers.dev/", {
+            try {
+                let response;
+                if (keywordsInput) {
+                    // Handle keywords input
+                    response = await fetch("https://keyword-kgr.v2ray-tokyo.workers.dev/", {
                         method: "POST",
-                        headers: {
-                            "Content-Type": contentType,
-                        },
-                        body: JSON.stringify(requestData),
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            id: requestId,
+                            keywords: keywordsInput
+                        })
                     });
-
-                    if (response.ok) {
-                        // Poll the result file until it's ready
-                        const checkFileExistence = setInterval(async () => {
-                            const fileResponse = await fetch(`https://keyword-kgr.v2ray-tokyo.workers.dev/check-file/${requestId}`);
-                            if (fileResponse.ok) {
-                                const fileUrl = await fileResponse.text();
-                                document.getElementById("downloadFile").href = fileUrl;
-                                document.getElementById("downloadLink").style.display = "block";
-                                clearInterval(checkFileExistence); // Stop polling once the file is available
-                            }
-                        }, 5000); // Check every 5 seconds
-                    } else {
-                        alert("Error submitting the form.");
-                    }
-                } catch (error) {
-                    console.error("Error:", error);
-                    alert("An error occurred while submitting the form.");
+                } else {
+                    // Handle CSV file
+                    const formData = new FormData();
+                    formData.append("id", requestId);
+                    formData.append("csvFile", csvFile);
+                    response = await fetch("https://keyword-kgr.v2ray-tokyo.workers.dev/", {
+                        method: "POST",
+                        body: formData
+                    });
                 }
+
+                if (response.ok) {
+                    updateStatus("Processing your request...", "processing");
+                    
+                    // Start polling for results
+                    pollInterval = setInterval(async () => {
+                        const isReady = await checkFileStatus(requestId);
+                        if (!isReady) {
+                            updateStatus("Still processing... Please wait.", "processing");
+                        }
+                    }, 5000);
+                } else {
+                    updateStatus("Error submitting the form. Please try again.", "error");
+                    submitBtn.disabled = false;
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                updateStatus("An error occurred. Please try again.", "error");
+                submitBtn.disabled = false;
             }
         });
     </script>
