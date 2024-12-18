@@ -1,5 +1,4 @@
 name: Google Crawler
-
 on:
   workflow_dispatch:
     inputs:
@@ -8,45 +7,51 @@ on:
         required: true
       keywords:
         description: "Comma-separated keywords"
-        required: false
+        required: true
       csvFile:
         description: "Base64-encoded CSV file (optional)"
         required: false
+      save_csv:
+        description: "Save results to CSV file"
+        required: false
+        default: 'false'
+        type: boolean
+      save_db:
+        description: "Save results to database"
+        required: false
+        default: 'true'
+        type: boolean
 
 jobs:
   run-crawler:
     runs-on: ubuntu-latest
-
     steps:
-      # Step 1: Checkout the repository
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # Step 2: Set up Node.js
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '20'  # Use Node.js version 20
+          node-version: '20'
 
-      # Step 3: Install dependencies manually
       - name: Install dependencies
         run: |
-          npm install playwright crawlee axios csv-parse
+          npm install playwright crawlee axios csv-parse mysql2
           npx playwright install firefox
 
-      # Step 4: Decode CSV file if provided
-      - name: Decode CSV file
-        if: ${{ inputs.csvFile != '' }}
-        run: |
-          echo "${{ inputs.csvFile }}" | base64 -d > input.csv
-
-      # Step 5: Run the crawler script
       - name: Run crawler
+        env:
+          INPUT_SAVE_CSV: ${{ inputs.save_csv }}
+          INPUT_SAVE_DB: ${{ inputs.save_db }}
+          MYSQL_HOST: ${{ secrets.MYSQL_HOST }}
+          MYSQL_USER: ${{ secrets.MYSQL_USER }}
+          MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+          MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
         run: |
           node main-pl.js "${{ inputs.id }}" "${{ inputs.keywords }}" "input.csv"
 
-      # Step 6: Commit and push results
       - name: Commit and push results
+        if: inputs.save_csv == 'true'
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
