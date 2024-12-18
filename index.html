@@ -7,7 +7,7 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            max-width: 600px;
+            max-width: 800px;
             margin: 50px auto;
             padding: 20px;
             background-color: #f9f9f9;
@@ -15,25 +15,36 @@
         h1 {
             text-align: center;
             color: #333;
+            margin-bottom: 30px;
         }
         .input-selection {
             margin-bottom: 20px;
             text-align: center;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         .input-selection label {
-            margin: 0 10px;
+            margin: 0 15px;
             cursor: pointer;
+            font-size: 16px;
         }
         .input-section {
             display: none;
             margin: 20px 0;
-            padding: 20px;
+            padding: 25px;
             background: white;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         .input-section.active {
             display: block;
+            animation: fadeIn 0.3s;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
         label {
             font-size: 16px;
@@ -43,25 +54,32 @@
         }
         input[type="text"], input[type="file"] {
             width: 100%;
-            padding: 10px;
-            margin-bottom: 20px;
+            padding: 12px;
+            margin-bottom: 15px;
             border: 1px solid #ddd;
             border-radius: 4px;
             box-sizing: border-box;
+            font-size: 14px;
+        }
+        input[type="text"]:focus {
+            border-color: #007bff;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
         }
         input[type="radio"] {
             margin-right: 5px;
         }
         button {
             width: 100%;
-            padding: 12px;
+            padding: 14px;
             background-color: #007bff;
             color: white;
             border: none;
             border-radius: 4px;
             cursor: pointer;
             font-size: 16px;
-            transition: background-color 0.3s;
+            font-weight: 500;
+            transition: all 0.3s ease;
         }
         button:disabled {
             background-color: #cccccc;
@@ -69,12 +87,14 @@
         }
         button:hover:not(:disabled) {
             background-color: #0056b3;
+            transform: translateY(-1px);
         }
         .status {
-            padding: 12px;
-            margin: 10px 0;
+            padding: 15px;
+            margin: 20px 0;
             border-radius: 4px;
             display: none;
+            font-size: 14px;
         }
         .status.processing {
             display: block;
@@ -94,31 +114,49 @@
             border: 1px solid #f5c6cb;
             color: #721c24;
         }
-        .download-btn {
-            background-color: #28a745;
-            color: white;
-            padding: 12px 24px;
-            border: none;
-            border-radius: 4px;
-            text-decoration: none;
-            display: inline-block;
-            margin-top: 10px;
-            transition: background-color 0.3s;
-        }
-        .download-btn:hover {
-            background-color: #218838;
-            text-decoration: none;
-            color: white;
+        .input-hint {
+            font-size: 13px;
+            color: #666;
+            margin-top: -10px;
+            margin-bottom: 15px;
         }
         #downloadSection {
             text-align: center;
             margin-top: 20px;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: none;
         }
-        .input-hint {
-            font-size: 0.9em;
-            color: #666;
-            margin-top: -15px;
-            margin-bottom: 15px;
+        .download-btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #28a745;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        .download-btn:hover {
+            background-color: #218838;
+            transform: translateY(-1px);
+        }
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
@@ -137,7 +175,7 @@
 
         <div id="keywordsSection" class="input-section active">
             <label for="keywords">Enter Keywords</label>
-            <input type="text" id="keywords" name="keywords" placeholder="e.g., apple, banana, cherry">
+            <input type="text" id="keywords" name="keywords" placeholder="e.g., seo tools, keyword research, backlink checker">
             <div class="input-hint">Enter keywords separated by commas</div>
         </div>
 
@@ -151,7 +189,7 @@
     </form>
 
     <div id="statusMessage" class="status"></div>
-    <div id="downloadSection" style="display:none;">
+    <div id="downloadSection">
         <p>Your results are ready!</p>
         <a id="downloadFile" class="download-btn" href="#" target="_blank">Download Results</a>
     </div>
@@ -183,27 +221,35 @@
         function updateStatus(message, type) {
             statusMessage.textContent = message;
             statusMessage.className = `status ${type}`;
+            if (type === 'processing') {
+                const spinner = document.createElement('span');
+                spinner.className = 'loading-spinner';
+                statusMessage.prepend(spinner);
+            }
         }
 
         async function checkFileStatus(requestId) {
             try {
                 const fileResponse = await fetch(`https://keyword-kgr.v2ray-tokyo.workers.dev/check-file/${requestId}`);
-                const responseData = await fileResponse.text();
-                
+                if (!fileResponse.ok) {
+                    return false;
+                }
+
+                const responseText = await fileResponse.text();
                 try {
-                    const jsonData = JSON.parse(responseData);
-                    if (jsonData.download_url) {
+                    const data = JSON.parse(responseText);
+                    if (data.download_url) {
                         clearInterval(pollInterval);
-                        document.getElementById("downloadFile").href = jsonData.download_url;
+                        document.getElementById("downloadFile").href = data.download_url;
                         downloadSection.style.display = "block";
                         updateStatus("Processing complete!", "success");
                         submitBtn.disabled = false;
                         return true;
                     }
                 } catch (e) {
-                    if (responseData.startsWith('http')) {
+                    if (responseText.startsWith('http')) {
                         clearInterval(pollInterval);
-                        document.getElementById("downloadFile").href = responseData;
+                        document.getElementById("downloadFile").href = responseText;
                         downloadSection.style.display = "block";
                         updateStatus("Processing complete!", "success");
                         submitBtn.disabled = false;
@@ -234,12 +280,15 @@
                         submitBtn.disabled = false;
                         return;
                     }
+                    
                     response = await fetch("https://keyword-kgr.v2ray-tokyo.workers.dev/", {
                         method: "POST",
-                        headers: { "Content-Type": "application/json" },
+                        headers: { 
+                            "Content-Type": "application/json"
+                        },
                         body: JSON.stringify({
                             id: requestId,
-                            keywords: keywordsInput
+                            keywords: keywordsInput,
                         })
                     });
                 } else {
@@ -249,9 +298,11 @@
                         submitBtn.disabled = false;
                         return;
                     }
+                    
                     const formData = new FormData();
                     formData.append("id", requestId);
                     formData.append("csvFile", csvFile);
+                    
                     response = await fetch("https://keyword-kgr.v2ray-tokyo.workers.dev/", {
                         method: "POST",
                         body: formData
@@ -259,7 +310,7 @@
                 }
 
                 if (response.ok) {
-                    updateStatus("Processing your request...", "processing");
+                    updateStatus("Processing your request... This may take a few minutes.", "processing");
                     pollInterval = setInterval(async () => {
                         const isReady = await checkFileStatus(requestId);
                         if (!isReady) {
@@ -267,7 +318,8 @@
                         }
                     }, 5000);
                 } else {
-                    updateStatus("Error submitting the form. Please try again.", "error");
+                    const errorText = await response.text();
+                    updateStatus(`Error: ${errorText}`, "error");
                     submitBtn.disabled = false;
                 }
             } catch (error) {
