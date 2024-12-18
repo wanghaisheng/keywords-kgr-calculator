@@ -8,7 +8,7 @@ on:
         required: true
       keywords:
         description: "Comma-separated keywords"
-        required: true
+        required: false
       csvFile:
         description: "Base64-encoded CSV file (optional)"
         required: false
