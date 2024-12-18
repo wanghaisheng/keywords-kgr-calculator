@@ -74,7 +74,8 @@
             if (keywordsInput) {
                 // When keywords are provided, send JSON
                 requestData.id = requestId;
-                requestData.keywords = keywordsInput.split(',').map(keyword => keyword.trim());
+                requestData.keywords  =keyword.trim()
+                // requestData.keywords = keywordsInput.split(',').map(keyword => keyword.trim());
                 contentType = "application/json"; // Set the content type to JSON
             } else if (csvFile) {
                 // When a CSV file is uploaded, send FormData
