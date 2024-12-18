@@ -94,7 +94,7 @@
                     if (response.ok) {
                         // Poll the result file until it's ready
                         const checkFileExistence = setInterval(async () => {
-                            const fileResponse = await fetch(`/check-file/${requestId}`);
+                            const fileResponse = await fetch(`https://keyword-kgr.v2ray-tokyo.workers.dev/check-file/${requestId}`);
                             if (fileResponse.ok) {
                                 const fileUrl = await fileResponse.text();
                                 document.getElementById("downloadFile").href = fileUrl;
@@ -126,7 +126,7 @@
                     if (response.ok) {
                         // Poll the result file until it's ready
                         const checkFileExistence = setInterval(async () => {
-                            const fileResponse = await fetch(`/check-file/${requestId}`);
+                            const fileResponse = await fetch(`https://keyword-kgr.v2ray-tokyo.workers.dev/check-file/${requestId}`);
                             if (fileResponse.ok) {
                                 const fileUrl = await fileResponse.text();
                                 document.getElementById("downloadFile").href = fileUrl;
