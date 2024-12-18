@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Google Search kgr Crawler</title>
+    <title>Google Search Crawler</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -14,25 +14,54 @@
         }
         h1 {
             text-align: center;
+            color: #333;
+        }
+        .input-selection {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .input-selection label {
+            margin: 0 10px;
+            cursor: pointer;
+        }
+        .input-section {
+            display: none;
+            margin: 20px 0;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .input-section.active {
+            display: block;
         }
         label {
             font-size: 16px;
             display: block;
             margin: 10px 0 5px;
+            color: #555;
         }
-        input, textarea, button {
+        input[type="text"], input[type="file"] {
             width: 100%;
             padding: 10px;
             margin-bottom: 20px;
-            border: 1px solid #ccc;
+            border: 1px solid #ddd;
             border-radius: 4px;
+            box-sizing: border-box;
+        }
+        input[type="radio"] {
+            margin-right: 5px;
         }
         button {
+            width: 100%;
+            padding: 12px;
             background-color: #007bff;
             color: white;
             border: none;
+            border-radius: 4px;
             cursor: pointer;
             font-size: 16px;
+            transition: background-color 0.3s;
         }
         button:disabled {
             background-color: #cccccc;
@@ -42,7 +71,7 @@
             background-color: #0056b3;
         }
         .status {
-            padding: 10px;
+            padding: 12px;
             margin: 10px 0;
             border-radius: 4px;
             display: none;
@@ -68,32 +97,61 @@
         .download-btn {
             background-color: #28a745;
             color: white;
-            padding: 10px 20px;
+            padding: 12px 24px;
             border: none;
             border-radius: 4px;
             text-decoration: none;
             display: inline-block;
             margin-top: 10px;
+            transition: background-color 0.3s;
         }
         .download-btn:hover {
             background-color: #218838;
+            text-decoration: none;
+            color: white;
+        }
+        #downloadSection {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .input-hint {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: -15px;
+            margin-bottom: 15px;
         }
     </style>
 </head>
 <body>
     <h1>Google Search Crawler</h1>
+    
     <form id="crawlerForm">
-        <label for="keywords">Enter Keywords (Comma Separated)</label>
-        <input type="text" id="keywords" name="keywords" placeholder="e.g., apple, banana, cherry">
-        
-        <label for="csvFile">OR Upload CSV File</label>
-        <input type="file" id="csvFile" name="csvFile" accept=".csv">
-        
-        <button type="submit" id="submitBtn">Submit</button>
+        <div class="input-selection">
+            <label>
+                <input type="radio" name="inputType" value="keywords" checked> Enter Keywords
+            </label>
+            <label>
+                <input type="radio" name="inputType" value="csv"> Upload CSV
+            </label>
+        </div>
+
+        <div id="keywordsSection" class="input-section active">
+            <label for="keywords">Enter Keywords</label>
+            <input type="text" id="keywords" name="keywords" placeholder="e.g., apple, banana, cherry">
+            <div class="input-hint">Enter keywords separated by commas</div>
+        </div>
+
+        <div id="csvSection" class="input-section">
+            <label for="csvFile">Upload CSV File</label>
+            <input type="file" id="csvFile" name="csvFile" accept=".csv">
+            <div class="input-hint">Upload a CSV file with keywords in the first column</div>
+        </div>
+
+        <button type="submit" id="submitBtn">Process Keywords</button>
     </form>
 
     <div id="statusMessage" class="status"></div>
-    <div id="downloadSection" style="display:none; text-align: center;">
+    <div id="downloadSection" style="display:none;">
         <p>Your results are ready!</p>
         <a id="downloadFile" class="download-btn" href="#" target="_blank">Download Results</a>
     </div>
@@ -103,7 +161,24 @@
         const submitBtn = document.getElementById("submitBtn");
         const statusMessage = document.getElementById("statusMessage");
         const downloadSection = document.getElementById("downloadSection");
+        const keywordsSection = document.getElementById("keywordsSection");
+        const csvSection = document.getElementById("csvSection");
         let pollInterval;
+
+        // Handle input type selection
+        document.querySelectorAll('input[name="inputType"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                if (e.target.value === 'keywords') {
+                    keywordsSection.classList.add('active');
+                    csvSection.classList.remove('active');
+                    submitBtn.textContent = "Process Keywords";
+                } else {
+                    keywordsSection.classList.remove('active');
+                    csvSection.classList.add('active');
+                    submitBtn.textContent = "Process CSV File";
+                }
+            });
+        });
 
         function updateStatus(message, type) {
             statusMessage.textContent = message;
@@ -116,7 +191,6 @@
                 const responseData = await fileResponse.text();
                 
                 try {
-                    // Try to parse as JSON first
                     const jsonData = JSON.parse(responseData);
                     if (jsonData.download_url) {
                         clearInterval(pollInterval);
@@ -127,7 +201,6 @@
                         return true;
                     }
                 } catch (e) {
-                    // If not JSON, check if it's a direct URL
                     if (responseData.startsWith('http')) {
                         clearInterval(pollInterval);
                         document.getElementById("downloadFile").href = responseData;
@@ -150,19 +223,17 @@
             downloadSection.style.display = "none";
             
             const requestId = 'req-' + Math.random().toString(36).substring(2, 15);
-            const keywordsInput = document.getElementById("keywords").value.trim();
-            const csvFile = document.getElementById("csvFile").files[0];
-
-            if (!keywordsInput && !csvFile) {
-                updateStatus("Please enter keywords or upload a CSV file.", "error");
-                submitBtn.disabled = false;
-                return;
-            }
-
+            const inputType = document.querySelector('input[name="inputType"]:checked').value;
+            
             try {
                 let response;
-                if (keywordsInput) {
-                    // Handle keywords input
+                if (inputType === 'keywords') {
+                    const keywordsInput = document.getElementById("keywords").value.trim();
+                    if (!keywordsInput) {
+                        updateStatus("Please enter keywords.", "error");
+                        submitBtn.disabled = false;
+                        return;
+                    }
                     response = await fetch("https://keyword-kgr.v2ray-tokyo.workers.dev/", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
@@ -172,7 +243,12 @@
                         })
                     });
                 } else {
-                    // Handle CSV file
+                    const csvFile = document.getElementById("csvFile").files[0];
+                    if (!csvFile) {
+                        updateStatus("Please select a CSV file.", "error");
+                        submitBtn.disabled = false;
+                        return;
+                    }
                     const formData = new FormData();
                     formData.append("id", requestId);
                     formData.append("csvFile", csvFile);
@@ -184,8 +260,6 @@
 
                 if (response.ok) {
                     updateStatus("Processing your request...", "processing");
-                    
-                    // Start polling for results
                     pollInterval = setInterval(async () => {
                         const isReady = await checkFileStatus(requestId);
                         if (!isReady) {
