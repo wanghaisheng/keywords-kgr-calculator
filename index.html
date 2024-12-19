@@ -321,7 +321,6 @@
         let pollInterval = null;
         let currentProcessId = null;
 
-        // Tab switching
         document.querySelectorAll('.tab-button').forEach(button => {
             button.addEventListener('click', () => {
                 const tab = button.dataset.tab;
@@ -351,7 +350,12 @@
             container.style.display = 'block';
             const percentage = (completed / total) * 100;
             progressFill.style.width = `${percentage}%`;
-            batchProgress.textContent = `${completed}/${total}`;
+            
+            if (total === 1) {
+                batchProgress.textContent = 'Processing...';
+            } else {
+                batchProgress.textContent = `${completed}/${total}`;
+            }
         }
 
         function showResults(batches) {
@@ -384,8 +388,9 @@
                 const data = await response.json();
                 if (data.status === 'success') {
                     currentProcessId = data.process_id;
+                    const totalBatches = data.total_batches || 1;
                     updateStatus('Processing...', 'processing');
-                    updateProgress(0, data.total_batches);
+                    updateProgress(0, totalBatches);
                     startStatusPolling(data.process_id);
                 } else {
                     throw new Error(data.message || 'Unknown error occurred');
@@ -413,8 +418,8 @@
                     document.getElementById('submitButton').disabled = false;
                     currentProcessId = null;
                 } else if (data.status === 'processing') {
-                    updateProgress(data.completed_batches, data.total_batches);
-                    updateStatus(`Processing...`, 'processing');
+                    updateProgress(data.completed_batches || 0, data.total_batches || 1);
+                    updateStatus('Processing...', 'processing');
                 }
             } catch (error) {
                 console.error('Status check error:', error);
@@ -429,7 +434,6 @@
             pollInterval = setInterval(() => checkStatus(processId), 5000);
         }
 
-        // Form submission handler
         document.getElementById('searchForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
@@ -467,18 +471,17 @@
             }
         });
 
-        // Clean up on page unload
         window.addEventListener('beforeunload', () => {
             if (pollInterval) {
                 clearInterval(pollInterval);
-            }
+                        }
         });
 
-        // Error boundary
         window.addEventListener('error', function(event) {
             console.error('Global error:', event.error);
-                updateStatus('An unexpected error occurred. Please try again.', 'error');
-            });
+            updateStatus('An unexpected error occurred. Please try again.', 'error');
+            document.getElementById('submitButton').disabled = false;
+        });
     </script>
 </body>
 </html>
