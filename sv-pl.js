@@ -64,7 +64,7 @@ async function startCrawler(keywords, id) {
       const visible = await page.locator('.monthly-volume tw-border-b tw-border-gray-200 tw-mb-6 tw-p-6 xs:tw-mb-0 xs:tw-border-b-0 lg:tw-mb-6 lg:tw-border-b').isVisible();
 
       const resultStats = await page.$eval('.tw-mb-1 tw-text-2xl', el => el.textContent);
-      const count = resultStats: 0;
+      const count = resultStats
 
         results.push({ keyword, searchVolume: 'spyfu', count });
         console.log(`Retrying Keyword: "${keyword}", Type: "intitle", Count: ${count}`);
