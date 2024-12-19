@@ -268,6 +268,7 @@
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <h1>Search Volume Checker</h1>
@@ -358,15 +359,23 @@
             }
         }
 
-        function showResults(batches) {
+        function showResults(batches, batchInfo) {
             const container = document.getElementById('resultsContainer');
             const grid = document.getElementById('downloadGrid');
             
-            grid.innerHTML = batches.map(batch => `
-                <a href="${batch.download_url}" class="download-button" target="_blank">
-                    Download Results
-                </a>
-            `).join('');
+            if (batchInfo.totalBatches === 1) {
+                grid.innerHTML = `
+                    <a href="${batches[0].download_url}" class="download-button" target="_blank">
+                        Download Results
+                    </a>
+                `;
+            } else {
+                grid.innerHTML = batches.map((batch, index) => `
+                    <a href="${batch.download_url}" class="download-button" target="_blank">
+                        Batch ${index + 1} Results (${batch.keywords_count} keywords)
+                    </a>
+                `).join('');
+            }
             
             container.style.display = 'block';
         }
@@ -388,10 +397,20 @@
                 const data = await response.json();
                 if (data.status === 'success') {
                     currentProcessId = data.process_id;
-                    const totalBatches = data.total_batches || 1;
-                    updateStatus('Processing...', 'processing');
-                    updateProgress(0, totalBatches);
-                    startStatusPolling(data.process_id);
+                    const batchInfo = {
+                        totalBatches: data.total_batches,
+                        totalKeywords: data.total_keywords,
+                        batches: data.batches.map(batch => ({
+                            batchId: batch.batch_id,
+                            branchName: batch.branch_name,
+                            keywordsCount: batch.keywords_count
+                        }))
+                    };
+                    
+                    updateStatus(`Processing ${batchInfo.totalKeywords} keywords in ${batchInfo.totalBatches} ${batchInfo.totalBatches > 1 ? 'batches' : 'batch'}...`, 'processing');
+                    updateProgress(0, batchInfo.totalBatches);
+                    
+                    startStatusPolling(data.process_id, batchInfo);
                 } else {
                     throw new Error(data.message || 'Unknown error occurred');
                 }
@@ -401,7 +420,7 @@
             }
         }
 
-        async function checkStatus(processId) {
+        async function checkStatus(processId, batchInfo) {
             try {
                 const response = await fetch(`${API_URL}/status?processId=${processId}`);
                 if (!response.ok) {
@@ -413,13 +432,18 @@
                 if (data.status === 'completed') {
                     clearInterval(pollInterval);
                     document.getElementById('progressContainer').style.display = 'none';
-                    showResults(data.batches);
+                    showResults(data.batches, batchInfo);
                     updateStatus('Search completed successfully!', 'success');
                     document.getElementById('submitButton').disabled = false;
                     currentProcessId = null;
                 } else if (data.status === 'processing') {
-                    updateProgress(data.completed_batches || 0, data.total_batches || 1);
-                    updateStatus('Processing...', 'processing');
+                    const completedBatches = data.completed_batches || 0;
+                    const message = batchInfo.totalBatches === 1 
+                        ? 'Processing keyword...' 
+                        : `Processing batch ${completedBatches + 1} of ${batchInfo.totalBatches}...`;
+                    
+                    updateProgress(completedBatches, batchInfo.totalBatches);
+                    updateStatus(message, 'processing');
                 }
             } catch (error) {
                 console.error('Status check error:', error);
@@ -427,11 +451,11 @@
             }
         }
 
-        function startStatusPolling(processId) {
+        function startStatusPolling(processId, batchInfo) {
             if (pollInterval) {
                 clearInterval(pollInterval);
             }
-            pollInterval = setInterval(() => checkStatus(processId), 5000);
+            pollInterval = setInterval(() => checkStatus(processId, batchInfo), 5000);
         }
 
         document.getElementById('searchForm').addEventListener('submit', async (e) => {
@@ -474,7 +498,7 @@
         window.addEventListener('beforeunload', () => {
             if (pollInterval) {
                 clearInterval(pollInterval);
-                        }
+            }
         });
 
         window.addEventListener('error', function(event) {
@@ -485,3 +509,4 @@
     </script>
 </body>
 </html>
+    
