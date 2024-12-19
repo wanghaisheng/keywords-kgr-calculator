@@ -46,7 +46,7 @@ async function startCrawler(keywords, id) {
       console.log('========',t)
       // Extract result count
       const resultStats = await page.$eval('.tw-mb-1 tw-text-2xl', el => el.textContent);
-      const count = resultStats: 0;
+      const count = resultStats
 
       results.push({ keyword, searchType: 'spyfu', count });
     } catch (error) {
