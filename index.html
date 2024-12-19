@@ -1,607 +1,503 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Google Search Volume Checker</title>
-    <style>
-        :root {
-            --primary-color: #4CAF50;
-            --secondary-color: #2196F3;
-            --success-color: #28a745;
-            --warning-color: #ffc107;
-            --error-color: #dc3545;
-            --gray-color: #6c757d;
-            --light-bg: #f8f9fa;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Search Volume Checker</title>
+<style>
+:root {
+  --primary-color: #4CAF50;
+  --secondary-color: #2196F3;
+  --success-color: #28a745;
+  --warning-color: #ffc107;
+  --error-color: #dc3545;
+  --gray-color: #6c757d;
+  --light-bg: #f8f9fa;
+}
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background: var(--light-bg);
-            min-height: 100vh;
-            padding: 2rem;
-        }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+  line-height: 1.6;
+  color: #333;
+  background: var(--light-bg);
+  min-height: 100vh;
+  padding: 2rem;
+}
 
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            padding: 2rem;
-        }
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  padding: 2rem;
+}
 
-        h1 {
-            text-align: center;
-            color: #2c3e50;
-            margin-bottom: 2rem;
-            font-size: 2.5rem;
-            font-weight: 700;
-        }
+h1 {
+  text-align: center;
+  color: #2c3e50;
+  margin-bottom: 2rem;
+  font-size: 2.5rem;
+  font-weight: 700;
+}
 
-        .input-tabs {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 2rem;
-            border-bottom: 2px solid #eee;
-            padding-bottom: 1rem;
-        }
+.input-tabs {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2rem;
+  border-bottom: 2px solid #eee;
+  padding-bottom: 1rem;
+}
 
-        .tab-button {
-            background: none;
-            border: none;
-            padding: 0.8rem 1.5rem;
-            margin: 0 0.5rem;
-            font-size: 1rem;
-            color: var(--gray-color);
-            cursor: pointer;
-            transition: all 0.3s ease;
-            border-radius: 6px;
-        }
+.tab-button {
+  background: none;
+  border: none;
+  padding: 0.8rem 1.5rem;
+  margin: 0 0.5rem;
+  font-size: 1rem;
+  color: var(--gray-color);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border-radius: 6px;
+}
 
-        .tab-button.active {
-            color: var(--primary-color);
-            background: rgba(76, 175, 80, 0.1);
-            font-weight: 600;
-        }
+.tab-button.active {
+  color: var(--primary-color);
+  background: rgba(76, 175, 80, 0.1);
+  font-weight: 600;
+}
 
-        .input-section {
-            display: none;
-            opacity: 0;
-            transform: translateY(10px);
-            transition: all 0.3s ease;
-        }
+.input-section {
+  display: none;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.3s ease;
+}
 
-        .input-section.active {
-            display: block;
-            opacity: 1;
-            transform: translateY(0);
-        }
+.input-section.active {
+  display: block;
+  opacity: 1;
+  transform: translateY(0);
+}
 
-        .input-group {
-            margin-bottom: 1.5rem;
-        }
+.input-group {
+  margin-bottom: 1.5rem;
+}
 
-        label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 600;
-            color: #2c3e50;
-        }
+label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: #2c3e50;
+}
 
-        .input-hint {
-            font-size: 0.875rem;
-            color: var(--gray-color);
-            margin-top: 0.5rem;
-        }
+.input-hint {
+  font-size: 0.875rem;
+  color: var(--gray-color);
+  margin-top: 0.5rem;
+}
 
-        input[type="text"],
-        input[type="file"] {
-            width: 100%;
-            padding: 0.8rem;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-        }
+input[type="text"],
+input[type="file"] {
+  width: 100%;
+  padding: 0.8rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
 
-        input[type="text"]:focus {
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
-            outline: none;
-        }
+input[type="text"]:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
+  outline: none;
+}
 
-        .submit-button {
-            width: 100%;
-            padding: 1rem;
-            background: var(--primary-color);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-top: 1rem;
-        }
+.submit-button {
+  width: 100%;
+  padding: 1rem;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 1rem;
+}
 
-        .submit-button:hover:not(:disabled) {
-            background: #43a047;
-            transform: translateY(-2px);
-        }
+.submit-button:hover:not(:disabled) {
+  background: #43a047;
+  transform: translateY(-2px);
+}
 
-        .submit-button:disabled {
-            background: var(--gray-color);
-            cursor: not-allowed;
-            transform: none;
-        }
+.submit-button:disabled {
+  background: var(--gray-color);
+  cursor: not-allowed;
+  transform: none;
+}
 
-        .status-container {
-            margin-top: 2rem;
-            padding: 1rem;
-            border-radius: 8px;
-            display: none;
-        }
+.status-container {
+  margin-top: 2rem;
+  padding: 1rem;
+  border-radius: 8px;
+  display: none;
+}
 
-        .status-container.processing {
-            display: block;
-            background: rgba(33, 150, 243, 0.1);
-            border: 1px solid rgba(33, 150, 243, 0.2);
-        }
+.status-container.processing {
+  display: block;
+  background: rgba(33, 150, 243, 0.1);
+  border: 1px solid rgba(33, 150, 243, 0.2);
+}
 
-        .status-container.success {
-            display: block;
-            background: rgba(76, 175, 80, 0.1);
-            border: 1px solid rgba(76, 175, 80, 0.2);
-        }
+.status-container.success {
+  display: block;
+  background: rgba(76, 175, 80, 0.1);
+  border: 1px solid rgba(76, 175, 80, 0.2);
+}
 
-        .status-container.error {
-            display: block;
-            background: rgba(220, 53, 69, 0.1);
-            border: 1px solid rgba(220, 53, 69, 0.2);
-        }
+.status-container.error {
+  display: block;
+  background: rgba(220, 53, 69, 0.1);
+  border: 1px solid rgba(220, 53, 69, 0.2);
+}
 
-        .progress-container {
-            margin-top: 1.5rem;
-            display: none;
-        }
+.progress-container {
+  margin-top: 1.5rem;
+  display: none;
+}
 
-        .progress-bar {
-            height: 8px;
-            background: #e0e0e0;
-            border-radius: 4px;
-            overflow: hidden;
-            margin-top: 0.5rem;
-        }
+.progress-bar {
+  height: 8px;
+  background: #e0e0e0;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 0.5rem;
+}
 
-        .progress-fill {
-            height: 100%;
-            background: var(--primary-color);
-            width: 0;
-            transition: width 0.3s ease;
-        }
+.progress-fill {
+  height: 100%;
+  background: var(--primary-color);
+  width: 0;
+  transition: width 0.3s ease;
+}
 
-        .batch-info {
-            margin-top: 1rem;
-            font-size: 0.9rem;
-            color: var(--gray-color);
-        }
+.batch-info {
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  color: var(--gray-color);
+}
 
-        .results-container {
-            display: none;
-            margin-top: 2rem;
-            padding: 1.5rem;
-            background: #f8f9fa;
-            border-radius: 8px;
-            animation: slideUp 0.3s ease;
-        }
+.results-container {
+  display: none;
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  animation: slideUp 0.3s ease;
+}
 
-        .download-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-top: 1rem;
-        }
+.download-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
 
-        .download-button {
-            display: inline-block;
-            padding: 0.8rem 1.2rem;
-            background: var(--secondary-color);
-            color: white;
-            text-decoration: none;
-            border-radius: 6px;
-            text-align: center;
-            transition: all 0.3s ease;
-        }
+.download-button {
+  display: inline-block;
+  padding: 0.8rem 1.2rem;
+  background: var(--secondary-color);
+  color: white;
+  text-decoration: none;
+  border-radius: 6px;
+  text-align: center;
+  transition: all 0.3s ease;
+}
 
-        .download-button:hover {
-            background: #1976D2;
-            transform: translateY(-2px);
-        }
+.download-button:hover {
+  background: #1976D2;
+  transform: translateY(-2px);
+}
 
-        .spinner {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top-color: white;
-            animation: spin 1s ease-in-out infinite;
-            margin-right: 0.5rem;
-        }
+.wave-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  margin: 1rem 0;
+}
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
+.wave-loading > div {
+  width: 8px;
+  height: 8px;
+  background: var(--primary-color);
+  border-radius: 50%;
+  animation: wave 1.5s infinite;
+}
 
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
+.wave-loading > div:nth-child(2) {
+  animation-delay: 0.1s;
+}
 
-        .wave-loading {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 4px;
-            margin: 1rem 0;
-        }
+.wave-loading > div:nth-child(3) {
+  animation-delay: 0.2s;
+}
 
-        .wave-loading > div {
-            width: 8px;
-            height: 8px;
-            background: var(--primary-color);
-            border-radius: 50%;
-            animation: wave 1.5s infinite;
-        }
+@keyframes wave {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
 
-        .wave-loading > div:nth-child(2) {
-            animation-delay: 0.1s;
-        }
-
-        .wave-loading > div:nth-child(3) {
-            animation-delay: 0.2s;
-        }
-
-        @keyframes wave {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
-        }
-    </style>
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+</style>
 </head>
 <body>
-    <div class="container">
-        <h1>Search Volume Checker</h1>
-        
-        <div class="input-tabs">
-            <button class="tab-button active" data-tab="keywords">Enter Keywords</button>
-            <button class="tab-button" data-tab="csv">Upload CSV</button>
-        </div>
-
-        <form id="searchForm">
-            <div id="keywordsInput" class="input-section active">
-                <div class="input-group">
-                    <label for="keywords">Keywords</label>
-                    <input type="text" id="keywords" placeholder="Enter keywords separated by commas">
-                    <div class="input-hint">Enter up to 30 keywords per batch, separated by commas</div>
-                </div>
-            </div>
-
-            <div id="csvInput" class="input-section">
-                <div class="input-group">
-                    <label for="csvFile">CSV File</label>
-                    <input type="file" id="csvFile" accept=".csv">
-                    <div class="input-hint">Upload a CSV file with keywords in the first column</div>
-                </div>
-            </div>
-
-            <button type="submit" class="submit-button" id="submitButton">
-                Check Search Volume
-            </button>
-        </form>
-
-        <div id="statusContainer" class="status-container">
-            <div class="wave-loading">
-                <div></div>
-                <div></div>
-                <div></div>
-            </div>
-            <div id="statusMessage"></div>
-        </div>
-
-        <div id="progressContainer" class="progress-container">
-            <div class="batch-info">
-                Processing batches: <span id="batchProgress">0/0</span>
-            </div>
-            <div class="progress-bar">
-                <div id="progressFill" class="progress-fill"></div>
+<div class="container">
+    <h1>Search Volume Checker</h1>
+    <div class="input-tabs">
+        <button class="tab-button active" data-tab="keywords">Enter Keywords</button>
+        <button class="tab-button" data-tab="csv">Upload CSV</button>
+    </div>
+    <form id="searchForm">
+        <div id="keywordsInput" class="input-section active">
+            <div class="input-group">
+                <label for="keywords">Keywords</label>
+                <input type="text" id="keywords" placeholder="Enter keywords separated by commas">
+                <div class="input-hint">Enter up to 30 keywords per batch, separated by commas</div>
             </div>
         </div>
-
-        <div id="resultsContainer" class="results-container">
-            <h3>Results Ready!</h3>
-            <div id="downloadGrid" class="download-grid"></div>
+        <div id="csvInput" class="input-section">
+            <div class="input-group">
+                <label for="csvFile">CSV File</label>
+                <input type="file" id="csvFile" accept=".csv">
+                <div class="input-hint">Upload a CSV file with keywords in the first column</div>
+            </div>
+        </div>
+        <button type="submit" class="submit-button" id="submitButton">
+            Check Search Volume
+        </button>
+    </form>
+    <div id="statusContainer" class="status-container">
+        <div class="wave-loading">
+            <div></div>
+            <div></div>
+            <div></div>
+        </div>
+        <div id="statusMessage"></div>
+    </div>
+    <div id="progressContainer" class="progress-container">
+        <div class="batch-info">
+            Processing batches: <span id="batchProgress">0/0</span>
+        </div>
+        <div class="progress-bar">
+            <div id="progressFill" class="progress-fill"></div>
         </div>
     </div>
+    <div id="resultsContainer" class="results-container">
+        <h3>Results Ready!</h3>
+        <div id="downloadGrid" class="download-grid"></div>
+    </div>
+</div>
 
-    <script>
-        const API_URL = 'https://keyword-kgr.v2ray-tokyo.workers.dev';
-        let pollInterval = null;
-        let currentProcessId = null;
+<script>
+const API_URL = 'https://keyword-kgr.v2ray-tokyo.workers.dev';
+let pollInterval = null;
+let currentProcessId = null;
 
-        // Tab switching
-        document.querySelectorAll('.tab-button').forEach(button => {
-            button.addEventListener('click', () => {
-                const tab = button.dataset.tab;
-                document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
-                document.querySelectorAll('.input-section').forEach(s => s.classList.remove('active'));
-                button.classList.add('active');
-                document.getElementById(`${tab}Input`).classList.add('active');
-            });
+// Tab switching
+document.querySelectorAll('.tab-button').forEach(button => {
+    button.addEventListener('click', () => {
+        const tab = button.dataset.tab;
+        document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.input-section').forEach(s => s.classList.remove('active'));
+        button.classList.add('active');
+        document.getElementById(`${tab}Input`).classList.add('active');
+    });
+});
+
+function updateStatus(message, type) {
+    const container = document.getElementById('statusContainer');
+    const messageEl = document.getElementById('statusMessage');
+    container.className = `status-container ${type}`;
+    messageEl.textContent = message;
+    container.style.display = 'block';
+    
+    const waveLoading = container.querySelector('.wave-loading');
+    waveLoading.style.display = type === 'processing' ? 'flex' : 'none';
+}
+
+function updateProgress(completed, total) {
+    const container = document.getElementById('progressContainer');
+    const progressFill = document.getElementById('progressFill');
+    const batchProgress = document.getElementById('batchProgress');
+    
+    container.style.display = 'block';
+    const percentage = (completed / total) * 100;
+    progressFill.style.width = `${percentage}%`;
+    batchProgress.textContent = `${completed}/${total}`;
+}
+
+function showResults(batches) {
+    const container = document.getElementById('resultsContainer');
+    const grid = document.getElementById('downloadGrid');
+    
+    grid.innerHTML = batches.map(batch => `
+        <a href="${batch.download_url}" class="download-button" target="_blank">
+            ${batches.length === 1 ? 'Download Results' : `Batch ${batch.batch_id.split('batch')[1]} Results`}
+        </a>
+    `).join('');
+    
+    container.style.display = 'block';
+}
+
+async function submitKeywords(keywords) {
+    try {
+        const response = await fetch(`${API_URL}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ 
+                keywords: Array.isArray(keywords) ? keywords : [keywords] 
+            })
         });
 
-        function updateStatus(message, type) {
-            const container = document.getElementById('statusContainer');
-            const messageEl = document.getElementById('statusMessage');
-            
-            container.className = `status-container ${type}`;
-            messageEl.textContent = message;
-            container.style.display = 'block';
-
-            if (type === 'processing') {
-                container.querySelector('.wave-loading').style.display = 'flex';
-            } else {
-                container.querySelector('.wave-loading').style.display = 'none';
-            }
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        function updateProgress(completed, total) {
-            const container = document.getElementById('progressContainer');
-            const progressFill = document.getElementById('progressFill');
-            const batchProgress = document.getElementById('batchProgress');
-            
-            container.style.display = 'block';
-            const percentage = (completed / total) * 100;
-            progressFill.style.width = `${percentage}%`;
-            batchProgress.textContent = `${completed}/${total}`;
+        const data = await response.json();
+        if (data.status === 'success') {
+            currentProcessId = data.process_id;
+            const batchCount = data.total_batches || 1;
+            updateStatus(
+                `Processing ${batchCount === 1 ? 'keyword' : `${batchCount} batches`}...`,
+                'processing'
+            );
+            updateProgress(0, batchCount);
+            startStatusPolling(data.process_id);
+        } else {
+            throw new Error(data.message || 'Unknown error occurred');
+        }
+    } catch (error) {
+        updateStatus(`Error: ${error.message}`, 'error');
+        document.getElementById('submitButton').disabled = false;
+    }
+}
+
+async function checkStatus(processId) {
+    try {
+        const response = await fetch(`${API_URL}/status?processId=${processId}`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        function showResults(batches) {
-            const container = document.getElementById('resultsContainer');
-            const grid = document.getElementById('downloadGrid');
-            
-            grid.innerHTML = batches.map(batch => `
-                <a href="${batch.download_url}" class="download-button" target="_blank">
-                    Batch ${batch.batch_id.split('batch')[1]} Results
-                </a>
-            `).join('');
-            
-            container.style.display = 'block';
-        }
-
-        async function submitKeywords(keywords) {
-            try {
-                const response = await fetch(`${API_URL}/`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ keywords })
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const data = await response.json();
-                
-                if (data.status === 'success') {
-                    currentProcessId = data.process_id;
-                    updateStatus(`Processing ${data.total_batches} batches...`, 'processing');
-                    updateProgress(0, data.total_batches);
-                    startStatusPolling(data.process_id);
-                } else {
-                    throw new Error(data.message || 'Unknown error occurred');
-                }
-            } catch (error) {
-                updateStatus(`Error: ${error.message}`, 'error');
-                document.getElementById('submitButton').disabled = false;
-            }
-        }
-
-        async function checkStatus(processId) {
-            try {
-                const response = await fetch(`${API_URL}/status?processId=${processId}`);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const data = await response.json();
-
-                if (data.status === 'completed') {
-                    clearInterval(pollInterval);
-                    document.getElementById('progressContainer').style.display = 'none';
-                    showResults(data.batches);
-                    updateStatus('All batches completed successfully!', 'success');
-                    document.getElementById('submitButton').disabled = false;
-                    currentProcessId = null;
-                } else if (data.status === 'processing') {
-                    const completedBatches = data.batches.filter(b => b.status === 'completed').length;
-                    updateProgress(completedBatches, data.batches.length);
-                    updateStatus(`Processing batch ${completedBatches} of ${data.batches.length}...`, 'processing');
-                }
-            } catch (error) {
-                console.error('Status check error:', error);
-                updateStatus(`still processing: result file not prepared`, 'info');
-            }
-        }
-
-        function startStatusPolling(processId) {
-            if (pollInterval) {
-                clearInterval(pollInterval);
-            }
-            pollInterval = setInterval(() => checkStatus(processId), 5000);
-        }
-
-        document.getElementById('searchForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const submitButton = document.getElementById('submitButton');
-            submitButton.disabled = true;
-            
-            document.getElementById('resultsContainer').style.display = 'none';
+        const data = await response.json();
+        
+        if (data.status === 'completed') {
+            clearInterval(pollInterval);
             document.getElementById('progressContainer').style.display = 'none';
-
-            const activeTab = document.querySelector('.tab-button.active').dataset.tab;
-
-            try {
-                let keywords;
-                if (activeTab === 'keywords') {
-                    keywords = document.getElementById('keywords').value.trim();
-                    if (!keywords) {
-                        throw new Error('Please enter keywords');
-                    }
-                } else {
-                    const csvFile = document.getElementById('csvFile').files[0];
-                    if (!csvFile) {
-                        throw new Error('Please select a CSV file');
-                    }
-                    
-                    const text = await csvFile.text();
-                    keywords = text.split('\n')
-                        .map(line => line.split(',')[0].trim())
-                        .filter(keyword => keyword.length > 0);
-                }
-
-                updateStatus('Starting process...', 'processing');
-                await submitKeywords(keywords);
-
-            } catch (error) {
-                updateStatus(error.message, 'error');
-                submitButton.disabled = false;
-            }
-        });
-
-        // File size warning
-        document.getElementById('csvFile').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                const fileSizeMB = file.size / (1024 * 1024);
-                if (fileSizeMB > 5) {
-                    updateStatus('Warning: Large files will be processed in multiple batches', 'warning');
-                }
-            }
-        });
-
-        // Keyword count warning
-        document.getElementById('keywords').addEventListener('input', function(e) {
-            const keywords = e.target.value.split(',').filter(k => k.trim().length > 0);
-            if (keywords.length > 30) {
-                updateStatus('Note: Keywords will be processed in multiple batches', 'warning');
-            }
-        });
-
-        // Clean up on page unload
-        window.addEventListener('beforeunload', () => {
-            if (pollInterval) {
-                clearInterval(pollInterval);
-            }
-        });
-
-        // Add this helper function for showing warnings
-        function showWarning(message) {
-            const warningDiv = document.createElement('div');
-            warningDiv.className = 'status-container warning';
-            warningDiv.textContent = message;
+            showResults(data.batches);
+            updateStatus('Search completed successfully!', 'success');
+            document.getElementById('submitButton').disabled = false;
+            currentProcessId = null;
+        } else if (data.status === 'processing') {
+            const completedBatches = data.completed_batches || 0;
+            const totalBatches = data.total_batches || 1;
+            updateProgress(completedBatches, totalBatches);
             
-            // Remove after 5 seconds
-            setTimeout(() => {
-                warningDiv.remove();
-            }, 5000);
+            const message = totalBatches === 1 ? 
+                'Processing keyword...' : 
+                `Processing batch ${completedBatches + 1} of ${totalBatches}...`;
+            
+            updateStatus(message, 'processing');
         }
+    } catch (error) {
+        console.error('Status check error:', error);
+        updateStatus('Processing...', 'processing');
+    }
+}
 
-        // Add error boundary
-        window.addEventListener('error', function(event) {
-            console.error('Global error:', event.error);
-            updateStatus('An unexpected error occurred. Please try again.', 'error');
-        });
+function startStatusPolling(processId) {
+    if (pollInterval) {
+        clearInterval(pollInterval);
+    }
+    pollInterval = setInterval(() => checkStatus(processId), 5000);
+}
 
-        // Add custom loading animation
-        function toggleLoadingAnimation(show) {
-            const waveLoading = document.querySelector('.wave-loading');
-            waveLoading.style.display = show ? 'flex' : 'none';
-        }
+// Form submission handler
+document.getElementById('searchForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const submitButton = document.getElementById('submitButton');
+    submitButton.disabled = true;
+    
+    document.getElementById('resultsContainer').style.display = 'none';
+    document.getElementById('progressContainer').style.display = 'none';
 
-        // Add retry mechanism for failed requests
-        async function retryRequest(fn, retries = 3) {
-            for (let i = 0; i < retries; i++) {
-                try {
-                    return await fn();
-                } catch (error) {
-                    if (i === retries - 1) throw error;
-                    await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
-                }
+    const activeTab = document.querySelector('.tab-button.active').dataset.tab;
+    
+    try {
+        let keywords;
+        if (activeTab === 'keywords') {
+            const keywordInput = document.getElementById('keywords').value.trim();
+            if (!keywordInput) {
+                throw new Error('Please enter keywords');
             }
+            keywords = keywordInput.split(',').map(k => k.trim()).filter(k => k.length > 0);
+        } else {
+            const csvFile = document.getElementById('csvFile').files[0];
+            if (!csvFile) {
+                throw new Error('Please select a CSV file');
+            }
+            const text = await csvFile.text();
+            keywords = text.split('\n')
+                .map(line => line.split(',')[0].trim())
+                .filter(keyword => keyword.length > 0);
         }
 
-        // Add download progress tracking
-        function trackDownload(url, filename) {
-            return fetch(url)
-                .then(response => response.blob())
-                .then(blob => {
-                    const downloadUrl = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = downloadUrl;
-                    a.download = filename;
-                    document.body.appendChild(a);
-                    a.click();
-                    window.URL.revokeObjectURL(downloadUrl);
-                    a.remove();
-                });
+        if (keywords.length === 0) {
+            throw new Error('No valid keywords found');
         }
 
-        // Add batch combination option
-        function combineResults(results) {
-            const combined = new Set();
-            results.forEach(batch => {
-                batch.keywords.forEach(keyword => combined.add(keyword));
-            });
-            return Array.from(combined);
-        }
+        updateStatus('Starting process...', 'processing');
+        await submitKeywords(keywords);
+        
+    } catch (error) {
+        updateStatus(error.message, 'error');
+        submitButton.disabled = false;
+    }
+});
 
-        // Add local storage for recent searches
-        function saveRecentSearch(keywords) {
-            const recent = JSON.parse(localStorage.getItem('recentSearches') || '[]');
-            recent.unshift(keywords);
-            if (recent.length > 5) recent.pop();
-            localStorage.setItem('recentSearches', JSON.stringify(recent));
-        }
+// Clean up on page unload
+window.addEventListener('beforeunload', () => {
+    if (pollInterval) {
+        clearInterval(pollInterval);
+    }
+});
 
-        function loadRecentSearches() {
-            return JSON.parse(localStorage.getItem('recentSearches') || '[]');
-        }
-
-        // Initialize recent searches if available
-        const recentSearches = loadRecentSearches();
-        if (recentSearches.length > 0) {
-            const keywordsInput = document.getElementById('keywords');
-            keywordsInput.placeholder = 'Recent: ' + recentSearches[0].slice(0, 3).join(', ') + '...';
-        }
-    </script>
+// Error boundary
+window.addEventListener('error', function(event) {
+    console.error('Global error:', event.error);
+    updateStatus('An unexpected error occurred. Please try again.', 'error');
+});
+</script>
 </body>
 </html>
