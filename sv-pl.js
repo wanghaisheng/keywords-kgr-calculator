@@ -37,7 +37,7 @@ async function startCrawler(keywords, id) {
       // Open search URL
       await page.goto(`https://www.spyfu.com/keyword/overview?vwot=aa=^&query={encodeURIComponent(keyword)}%22`);
       // Wait for Google's result stats
-      const visible = await page.locator('.monthly-volume tw-border-b tw-border-gray-200 tw-mb-6 tw-p-6 xs:tw-mb-0 xs:tw-border-b-0 lg:tw-mb-6 lg:tw-border-b').isVisible();
+      const visible = await page.locator('.monthly-volume').isVisible();
       if(visible){
         console.log('there is no search volume showing at all')
         return 
@@ -61,7 +61,7 @@ async function startCrawler(keywords, id) {
     for (const keyword of retryList) {
       try {
       await page.goto(`https://www.spyfu.com/keyword/overview?vwot=aa=^&query={encodeURIComponent(keyword)}%22`);
-      const visible = await page.locator('.monthly-volume tw-border-b tw-border-gray-200 tw-mb-6 tw-p-6 xs:tw-mb-0 xs:tw-border-b-0 lg:tw-mb-6 lg:tw-border-b').isVisible();
+      const visible = await page.locator('.monthly-volume').isVisible();
 
       const resultStats = await page.$eval('.tw-mb-1 tw-text-2xl', el => el.textContent);
       const count = resultStats
