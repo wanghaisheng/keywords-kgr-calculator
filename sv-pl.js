@@ -37,12 +37,12 @@ async function startCrawler(keywords, id) {
       // Open search URL
       await page.goto(`https://www.spyfu.com/keyword/overview?vwot=aa=^&query={encodeURIComponent(keyword)}%22`);
       // Wait for Google's result stats
-      const visible = await page.locator('.monthly-volume').isVisible();
+      const visible = await page.locator('css=#root > main > div > div > main > div > div > div.grid.outer > aside > div > div.tw-flex.tw-flex-wrap > div.volume-and-clicks.tw-w-full.xs\:tw-w-1\/2.lg\:tw-w-full > div.monthly-volume.tw-border-b.tw-border-gray-200.tw-mb-6.tw-p-6.xs\:tw-mb-0.xs\:tw-border-b-0.lg\:tw-mb-6.lg\:tw-border-b').isVisible();
       if(visible){
         console.log('there is no search volume showing at all')
         return 
       }
-      const t= await page.locator('.tw-mb-1 tw-text-2xl').allTextContents()
+      const resultStats = await page.locator('xpath=//*[@id="root"]/main/div/div/main/div/div/div[1]/aside/div/div[1]/div[1]/div[1]/div[1]/div[1]').allInnerTexts();
       console.log('========',t)
       // Extract result count
       const resultStats = await page.$eval('.tw-mb-1 tw-text-2xl', el => el.textContent);
@@ -61,9 +61,9 @@ async function startCrawler(keywords, id) {
     for (const keyword of retryList) {
       try {
       await page.goto(`https://www.spyfu.com/keyword/overview?vwot=aa=^&query={encodeURIComponent(keyword)}%22`);
-      const visible = await page.locator('.monthly-volume').isVisible();
+      const visible = await page.locator('css=#root > main > div > div > main > div > div > div.grid.outer > aside > div > div.tw-flex.tw-flex-wrap > div.volume-and-clicks.tw-w-full.xs\:tw-w-1\/2.lg\:tw-w-full > div.monthly-volume.tw-border-b.tw-border-gray-200.tw-mb-6.tw-p-6.xs\:tw-mb-0.xs\:tw-border-b-0.lg\:tw-mb-6.lg\:tw-border-b').isVisible();
 
-      const resultStats = await page.$eval('.tw-mb-1 tw-text-2xl', el => el.textContent);
+      const resultStats = await page.locator('xpath=//*[@id="root"]/main/div/div/main/div/div/div[1]/aside/div/div[1]/div[1]/div[1]/div[1]/div[1]').allInnerTexts();
       const count = resultStats
 
         results.push({ keyword, searchVolume: 'spyfu', count });
