@@ -43,7 +43,7 @@ async function startCrawler(keywords, id) {
         return 
       }
       // Extract result count
-      const resultStats = await page.locator('xpath=//*[@id="root"]/main/div/div/main/div/div/div[1]/aside/div/div[1]/div[1]/div[1]/div[1]/div[1]').allInnerTexts();
+      const resultStats = await page.locator('css=#root > main > div > div > main > div > div > div.grid.outer > aside > div > div.tw-flex.tw-flex-wrap > div.volume-and-clicks.tw-w-full.xs\:tw-w-1\/2.lg\:tw-w-full > div.monthly-volume.tw-border-b.tw-border-gray-200.tw-mb-6.tw-p-6.xs\:tw-mb-0.xs\:tw-border-b-0.lg\:tw-mb-6.lg\:tw-border-b > div.tw-font-bold.tw-leading-none > div.tw-mb-1.tw-text-2xl').allInnerTexts();
       const count = resultStats
 
       results.push({ keyword, searchType: 'spyfu', count });
@@ -61,7 +61,7 @@ async function startCrawler(keywords, id) {
       await page.goto(`https://www.spyfu.com/keyword/overview?vwot=aa=^&query={encodeURIComponent(keyword)}%22`);
       const visible = await page.locator('css=#root > main > div > div > main > div > div > div.grid.outer > aside > div > div.tw-flex.tw-flex-wrap > div.volume-and-clicks.tw-w-full.xs\:tw-w-1\/2.lg\:tw-w-full > div.monthly-volume.tw-border-b.tw-border-gray-200.tw-mb-6.tw-p-6.xs\:tw-mb-0.xs\:tw-border-b-0.lg\:tw-mb-6.lg\:tw-border-b').isVisible();
 
-      const resultStats = await page.locator('xpath=//*[@id="root"]/main/div/div/main/div/div/div[1]/aside/div/div[1]/div[1]/div[1]/div[1]/div[1]').allInnerTexts();
+      const resultStats = await page.locator('css=#root > main > div > div > main > div > div > div.grid.outer > aside > div > div.tw-flex.tw-flex-wrap > div.volume-and-clicks.tw-w-full.xs\:tw-w-1\/2.lg\:tw-w-full > div.monthly-volume.tw-border-b.tw-border-gray-200.tw-mb-6.tw-p-6.xs\:tw-mb-0.xs\:tw-border-b-0.lg\:tw-mb-6.lg\:tw-border-b > div.tw-font-bold.tw-leading-none > div.tw-mb-1.tw-text-2xl').allInnerTexts();
       const count = resultStats
 
         results.push({ keyword, searchVolume: 'spyfu', count });
