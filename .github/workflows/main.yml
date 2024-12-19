@@ -1,4 +1,4 @@
-name: Google Crawler branch save
+name: Google Crawler
 on:
   workflow_dispatch:
     inputs:
@@ -11,23 +11,41 @@ on:
       branch_name:
         description: "Branch name for results"
         required: true
+      save_csv:
+        description: "Save results to CSV file"
+        required: false
+        default: 'true'
+        type: boolean
+      save_db:
+        description: "Save results to database"
+        required: false
+        default: 'true'
+        type: boolean
 
 jobs:
   run-crawler:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write  # Add this line to ensure write permissions
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
           ref: ${{ inputs.branch_name }}
           fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Configure Git
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+          git fetch --all
+          
+      - name: Create or checkout branch
+        run: |
+          if git ls-remote --heads origin ${{ inputs.branch_name }}; then
+            git checkout ${{ inputs.branch_name }}
+          else
+            git checkout -b ${{ inputs.branch_name }}
+          fi
 
       - name: Set up Node.js
         uses: actions/setup-node@v3
@@ -39,15 +57,64 @@ jobs:
           npm install playwright crawlee axios csv-parse mysql2
           npx playwright install firefox
 
+      - name: Create results directory
+        run: mkdir -p results
+
       - name: Run crawler
+        env:
+          INPUT_SAVE_CSV: ${{ inputs.save_csv }}
+          INPUT_SAVE_DB: ${{ inputs.save_db }}
+          MYSQL_HOST: ${{ secrets.MYSQL_HOST }}
+          MYSQL_USER: ${{ secrets.MYSQL_USER }}
+          MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+          MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
         run: |
-          mkdir -p results
           node main-pl.js "${{ inputs.id }}" "${{ inputs.keywords }}" "input.csv"
 
+      - name: Check for changes
+        id: check_changes
+        run: |
+          if [[ -f "results/${{ inputs.id }}.csv" ]]; then
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Commit and push results
+        if: steps.check_changes.outputs.has_changes == 'true'
         run: |
           git add results/${{ inputs.id }}.csv
           git commit -m "Add results for task ID: ${{ inputs.id }}"
           git push origin ${{ inputs.branch_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload results as artifact
+        if: steps.check_changes.outputs.has_changes == 'true'
+        uses: actions/upload-artifact@v3
+        with:
+          name: search-results-${{ inputs.id }}
+          path: results/${{ inputs.id }}.csv
+          retention-days: 7
+
+      - name: Create status file
+        if: always()
+        run: |
+          mkdir -p results
+          if [[ "${{ steps.check_changes.outputs.has_changes }}" == "true" ]]; then
+            echo "completed" > "results/${{ inputs.id }}.status"
+          else
+            echo "failed" > "results/${{ inputs.id }}.status"
+          fi
+          git add "results/${{ inputs.id }}.status"
+          git commit -m "Update status for task ID: ${{ inputs.id }}"
+          git push origin ${{ inputs.branch_name }}
+
+      - name: Report status
+        if: always()
+        run: |
+          if [[ "${{ steps.check_changes.outputs.has_changes }}" == "true" ]]; then
+            echo "::notice::Results successfully saved to branch ${{ inputs.branch_name }}"
+          else
+            echo "::error::Failed to generate results for task ID ${{ inputs.id }}"
+          fi
