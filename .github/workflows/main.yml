@@ -1,4 +1,4 @@
-name: playwright Google all intitle Crawler
+name: Google Crawler branch save
 on:
   workflow_dispatch:
     inputs:
@@ -11,25 +11,23 @@ on:
       branch_name:
         description: "Branch name for results"
         required: true
-      save_csv:
-        description: "Save results to CSV file"
-        required: false
-        default: 'true'
-        type: boolean
-      save_db:
-        description: "Save results to database"
-        required: false
-        default: 'false'
-        type: boolean
 
 jobs:
   run-crawler:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Add this line to ensure write permissions
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
           ref: ${{ inputs.branch_name }}
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Set up Node.js
         uses: actions/setup-node@v3
@@ -42,21 +40,14 @@ jobs:
           npx playwright install firefox
 
       - name: Run crawler
-        env:
-          INPUT_SAVE_CSV: ${{ inputs.save_csv }}
-          INPUT_SAVE_DB: ${{ inputs.save_db }}
-          MYSQL_HOST: ${{ secrets.MYSQL_HOST }}
-          MYSQL_USER: ${{ secrets.MYSQL_USER }}
-          MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
-          MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
         run: |
+          mkdir -p results
           node main-pl.js "${{ inputs.id }}" "${{ inputs.keywords }}" "input.csv"
 
       - name: Commit and push results
-        if: inputs.save_csv == 'true'
         run: |
-          git config --global user.name "github-actions"
-          git config --global user.email "github-actions@github.com"
-          git add -A
+          git add results/${{ inputs.id }}.csv
           git commit -m "Add results for task ID: ${{ inputs.id }}"
           git push origin ${{ inputs.branch_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
