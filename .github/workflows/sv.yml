@@ -1,0 +1,60 @@
+name: spyfu
+on:
+  workflow_dispatch:
+    inputs:
+      id:
+        description: "Task ID for result naming"
+        required: true
+      keywords:
+        description: "Comma-separated keywords"
+        required: true
+      csvFile:
+        description: "Base64-encoded CSV file (optional)"
+        required: false
+      save_csv:
+        description: "Save results to CSV file"
+        required: false
+        default: 'false'
+        type: boolean
+      save_db:
+        description: "Save results to database"
+        required: false
+        default: 'true'
+        type: boolean
+
+jobs:
+  run-crawler:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: |
+          npm install playwright crawlee axios csv-parse mysql2
+          npx playwright install firefox
+
+      - name: Run crawler
+        env:
+          INPUT_SAVE_CSV: ${{ inputs.save_csv }}
+          INPUT_SAVE_DB: ${{ inputs.save_db }}
+          MYSQL_HOST: ${{ secrets.MYSQL_HOST }}
+          MYSQL_USER: ${{ secrets.MYSQL_USER }}
+          MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+          MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
+        run: |
+          node sv-pl.js "${{ inputs.id }}" "${{ inputs.keywords }}" "input.csv"
+
+      - name: Commit and push results
+        if: inputs.save_csv == 'true'
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git add -A
+          git commit -m "Add results for task ID: ${{ inputs.id }}"
+          git push
