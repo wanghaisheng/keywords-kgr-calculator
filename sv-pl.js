@@ -42,10 +42,8 @@ async function startCrawler(keywords, id) {
         console.log('there is no search volume showing at all')
         return 
       }
-      const resultStats = await page.locator('xpath=//*[@id="root"]/main/div/div/main/div/div/div[1]/aside/div/div[1]/div[1]/div[1]/div[1]/div[1]').allInnerTexts();
-      console.log('========',t)
       // Extract result count
-      const resultStats = await page.$eval('.tw-mb-1 tw-text-2xl', el => el.textContent);
+      const resultStats = await page.locator('xpath=//*[@id="root"]/main/div/div/main/div/div/div[1]/aside/div/div[1]/div[1]/div[1]/div[1]/div[1]').allInnerTexts();
       const count = resultStats
 
       results.push({ keyword, searchType: 'spyfu', count });
