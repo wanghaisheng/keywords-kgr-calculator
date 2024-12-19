@@ -1,4 +1,4 @@
-name: Google Crawler
+name: playwright Google all intitle Crawler
 on:
   workflow_dispatch:
     inputs:
@@ -8,18 +8,18 @@ on:
       keywords:
         description: "Comma-separated keywords"
         required: true
-      csvFile:
-        description: "Base64-encoded CSV file (optional)"
-        required: false
+      branch_name:
+        description: "Branch name for results"
+        required: true
       save_csv:
         description: "Save results to CSV file"
         required: false
-        default: 'false'
+        default: 'true'
         type: boolean
       save_db:
         description: "Save results to database"
         required: false
-        default: 'true'
+        default: 'false'
         type: boolean
 
 jobs:
@@ -28,6 +28,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+        with:
+          ref: ${{ inputs.branch_name }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v3
@@ -57,4 +59,4 @@ jobs:
           git config --global user.email "github-actions@github.com"
           git add -A
           git commit -m "Add results for task ID: ${{ inputs.id }}"
-          git push
+          git push origin ${{ inputs.branch_name }}
