@@ -231,4 +231,10 @@
                 alert(`Error applying filters: ${error.message}`);
             });
     });
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM loaded, initializing...');
+    initializeEventListeners();
+});
+console.log('sse.js loaded');
+
 </script>
