@@ -1,7 +1,7 @@
 // Replace the existing script section with this:
 <script>
     // Configuration
-    const API_URL = 'https://your-worker-url.workers.dev'; // Replace with your actual worker URL
+    const API_URL = 'https://kgr-backend-websocket.v2ray-tokyo.workers.dev'; // Replace with your actual worker URL
     let currentProcessId = null;
     let eventSource = null;
 
