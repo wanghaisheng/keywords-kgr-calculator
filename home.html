@@ -297,6 +297,16 @@
     <script>    console.log('HTML loaded');
     </script>
     <!-- Include the external script -->
-    <script src="sse.js"></script>
-</body>
+<!-- At the bottom of your body tag -->
+<script src="sse.js"></script>
+<script>
+    // Initialize after the script is loaded
+    document.addEventListener('DOMContentLoaded', function() {
+        if (KeywordAnalyzer) {
+            KeywordAnalyzer.init();
+        } else {
+            console.error('KeywordAnalyzer not loaded properly');
+        }
+    });
+</script></body>
 </html>
