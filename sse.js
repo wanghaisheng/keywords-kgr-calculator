@@ -1,5 +1,3 @@
-// Replace the existing script section with this:
-<script>
     // Configuration
     const API_URL = 'https://kgr-backend-websocket.v2ray-tokyo.workers.dev'; // Replace with your actual worker URL
     let currentProcessId = null;
@@ -236,5 +234,3 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeEventListeners();
 });
 console.log('sse.js loaded');
-
-</script>
