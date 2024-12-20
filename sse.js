@@ -1,13 +1,20 @@
+// sse.js
+
 // Configuration
 const API_URL = 'https://kgr-backend-websocket.v2ray-tokyo.workers.dev'; // Replace with your actual worker URL
 let currentProcessId = null;
 let eventSource = null;
+let timerInterval = null;
+let startTime = null;
 
-// Wait for DOM to be fully loaded
-document.addEventListener('DOMContentLoaded', function() {
+// Initialize all event listeners
+function initializeEventListeners() {
+    console.log('Initializing event listeners...');
+
     // Tab switching
     document.querySelectorAll('.tab-button').forEach(button => {
         button.addEventListener('click', () => {
+            console.log('Tab clicked:', button.dataset.tab);
             document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
             document.querySelectorAll('.input-content').forEach(c => c.classList.remove('active'));
             button.classList.add('active');
@@ -50,38 +57,50 @@ document.addEventListener('DOMContentLoaded', function() {
     // Submit button click handler
     const submitButton = document.getElementById('submitButton');
     if (submitButton) {
-        submitButton.addEventListener('click', async (e) => {
-            e.preventDefault();
-            console.log('Submit button clicked');
-            submitButton.disabled = true;
-            
-            try {
-                const activeTab = document.querySelector('.tab-button.active').dataset.tab;
-                let keywords;
-
-                if (activeTab === 'text') {
-                    keywords = document.getElementById('keywordsText').value.trim();
-                    if (!keywords) {
-                        throw new Error('Please enter keywords');
-                    }
-                } else {
-                    const file = document.getElementById('csvFile').files[0];
-                    if (!file) {
-                        throw new Error('Please select a CSV file');
-                    }
-                    keywords = await file.text();
-                }
-
-                await submitKeywords(keywords);
-            } catch (error) {
-                console.error('Submission error:', error);
-                alert(`Error: ${error.message}`);
-            } finally {
-                submitButton.disabled = false;
-            }
-        });
+        console.log('Adding submit button listener');
+        submitButton.addEventListener('click', handleSubmit);
     }
-});
+
+    // Filter button click handler
+    const filterButton = document.getElementById('applyFilters');
+    if (filterButton) {
+        filterButton.addEventListener('click', applyFilters);
+    }
+}
+
+// Handle form submission
+async function handleSubmit(e) {
+    e.preventDefault();
+    console.log('Submit button clicked');
+
+    const submitButton = document.getElementById('submitButton');
+    submitButton.disabled = true;
+
+    try {
+        const activeTab = document.querySelector('.tab-button.active').dataset.tab;
+        let keywords;
+
+        if (activeTab === 'text') {
+            keywords = document.getElementById('keywordsText').value.trim();
+            if (!keywords) {
+                throw new Error('Please enter keywords');
+            }
+        } else {
+            const file = document.getElementById('csvFile').files[0];
+            if (!file) {
+                throw new Error('Please select a CSV file');
+            }
+            keywords = await file.text();
+        }
+
+        await submitKeywords(keywords);
+    } catch (error) {
+        console.error('Submission error:', error);
+        alert(`Error: ${error.message}`);
+    } finally {
+        submitButton.disabled = false;
+    }
+}
 
 function handleFile(file) {
     if (!file.name.endsWith('.csv')) {
@@ -113,6 +132,7 @@ async function submitKeywords(keywords) {
         if (data.status === 'success') {
             currentProcessId = data.process_id;
             showProgress();
+            startTimer();
             startEventSource();
         } else {
             throw new Error(data.message || 'Unknown error occurred');
@@ -128,6 +148,21 @@ function showProgress() {
     if (progressSection) {
         progressSection.style.display = 'block';
     }
+}
+
+function startTimer() {
+    startTime = Date.now();
+    if (timerInterval) {
+        clearInterval(timerInterval);
+    }
+    
+    const timeElapsed = document.getElementById('timeElapsed');
+    timerInterval = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        const minutes = Math.floor(elapsed / 60);
+        const seconds = elapsed % 60;
+        timeElapsed.textContent = `Time: ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }, 1000);
 }
 
 function startEventSource() {
@@ -149,6 +184,9 @@ function startEventSource() {
     eventSource.onerror = (error) => {
         console.error('SSE error:', error);
         eventSource.close();
+        if (timerInterval) {
+            clearInterval(timerInterval);
+        }
         alert('Connection lost. Please refresh the page.');
     };
 }
@@ -165,20 +203,26 @@ function handleUpdate(data) {
 function updateProgress(data) {
     const progressFill = document.getElementById('progressFill');
     const batchStatus = document.getElementById('batchStatus');
+    const batchProgress = document.getElementById('batchProgress');
     
-    if (!progressFill || !batchStatus) return;
+    if (!progressFill || !batchStatus || !batchProgress) return;
 
     if (data.status.status === 'completed') {
         progressFill.style.width = '100%';
         batchStatus.textContent = 'Processing complete!';
+        batchProgress.textContent = `Completed all batches`;
         if (eventSource) {
             eventSource.close();
+        }
+        if (timerInterval) {
+            clearInterval(timerInterval);
         }
     } else {
         // Calculate progress based on completed batches
         const progress = (data.completedBatches / data.totalBatches) * 100;
         progressFill.style.width = `${progress}%`;
         batchStatus.textContent = `Processing batch ${data.completedBatches + 1} of ${data.totalBatches}`;
+        batchProgress.textContent = `Processing batch: ${data.completedBatches + 1}/${data.totalBatches}`;
     }
 }
 
@@ -210,8 +254,7 @@ function getKGRClass(kgrScore) {
     return 'kgr-difficult';
 }
 
-// Filter results
-document.getElementById('applyFilters')?.addEventListener('click', () => {
+function applyFilters() {
     const minSearchVolume = document.getElementById('minSearchVolume').value;
     const maxKgr = document.getElementById('maxKgr').value;
     
@@ -228,9 +271,27 @@ document.getElementById('applyFilters')?.addEventListener('click', () => {
             console.error('Filter error:', error);
             alert(`Error applying filters: ${error.message}`);
         });
-});
+}
+
+// Cleanup function
+function cleanup() {
+    if (eventSource) {
+        eventSource.close();
+    }
+    if (timerInterval) {
+        clearInterval(timerInterval);
+    }
+    currentProcessId = null;
+}
+
+// Handle page unload
+window.addEventListener('beforeunload', cleanup);
+
+// Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-console.log('DOM loaded, initializing...');
-initializeEventListeners();
+    console.log('DOM loaded, initializing...');
+    initializeEventListeners();
 });
+
+// Add this line at the end of the file to make sure it's loaded
 console.log('sse.js loaded');
