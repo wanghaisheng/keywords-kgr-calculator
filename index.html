@@ -214,8 +214,8 @@
             // Immediate first check
             checkStatus();
             
-            // Then poll every 5 seconds
-            pollInterval = setInterval(checkStatus, 5000);
+            // Then poll every 30 seconds
+            pollInterval = setInterval(checkStatus, 30000);
         }
 
         document.getElementById('searchForm').addEventListener('submit', async (e) => {
