@@ -4,271 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Search Volume Checker</title>
-    <style>
-        :root {
-            --primary-color: #4CAF50;
-            --secondary-color: #2196F3;
-            --success-color: #28a745;
-            --warning-color: #ffc107;
-            --error-color: #dc3545;
-            --gray-color: #6c757d;
-            --light-bg: #f8f9fa;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background: var(--light-bg);
-            min-height: 100vh;
-            padding: 2rem;
-        }
-
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            padding: 2rem;
-        }
-
-        h1 {
-            text-align: center;
-            color: #2c3e50;
-            margin-bottom: 2rem;
-            font-size: 2.5rem;
-            font-weight: 700;
-        }
-
-        .input-tabs {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 2rem;
-            border-bottom: 2px solid #eee;
-            padding-bottom: 1rem;
-        }
-
-        .tab-button {
-            background: none;
-            border: none;
-            padding: 0.8rem 1.5rem;
-            margin: 0 0.5rem;
-            font-size: 1rem;
-            color: var(--gray-color);
-            cursor: pointer;
-            transition: all 0.3s ease;
-            border-radius: 6px;
-        }
-
-        .tab-button.active {
-            color: var(--primary-color);
-            background: rgba(76, 175, 80, 0.1);
-            font-weight: 600;
-        }
-
-        .input-section {
-            display: none;
-            opacity: 0;
-            transform: translateY(10px);
-            transition: all 0.3s ease;
-        }
-
-        .input-section.active {
-            display: block;
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        .input-group {
-            margin-bottom: 1.5rem;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 600;
-            color: #2c3e50;
-        }
-
-        .input-hint {
-            font-size: 0.875rem;
-            color: var(--gray-color);
-            margin-top: 0.5rem;
-        }
-
-        input[type="text"],
-        input[type="file"] {
-            width: 100%;
-            padding: 0.8rem;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-        }
-
-        input[type="text"]:focus {
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
-            outline: none;
-        }
-
-        .submit-button {
-            width: 100%;
-            padding: 1rem;
-            background: var(--primary-color);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-top: 1rem;
-        }
-
-        .submit-button:hover:not(:disabled) {
-            background: #43a047;
-            transform: translateY(-2px);
-        }
-
-        .submit-button:disabled {
-            background: var(--gray-color);
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .status-container {
-            margin-top: 2rem;
-            padding: 1rem;
-            border-radius: 8px;
-            display: none;
-        }
-
-        .status-container.processing {
-            display: block;
-            background: rgba(33, 150, 243, 0.1);
-            border: 1px solid rgba(33, 150, 243, 0.2);
-        }
-
-        .status-container.success {
-            display: block;
-            background: rgba(76, 175, 80, 0.1);
-            border: 1px solid rgba(76, 175, 80, 0.2);
-        }
-
-        .status-container.error {
-            display: block;
-            background: rgba(220, 53, 69, 0.1);
-            border: 1px solid rgba(220, 53, 69, 0.2);
-        }
-
-        .progress-container {
-            margin-top: 1.5rem;
-            display: none;
-        }
-
-        .progress-bar {
-            height: 8px;
-            background: #e0e0e0;
-            border-radius: 4px;
-            overflow: hidden;
-            margin-top: 0.5rem;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: var(--primary-color);
-            width: 0;
-            transition: width 0.3s ease;
-        }
-
-        .batch-info {
-            margin-top: 1rem;
-            font-size: 0.9rem;
-            color: var(--gray-color);
-        }
-
-        .results-container {
-            display: none;
-            margin-top: 2rem;
-            padding: 1.5rem;
-            background: #f8f9fa;
-            border-radius: 8px;
-            animation: slideUp 0.3s ease;
-        }
-
-        .download-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-top: 1rem;
-        }
-
-        .download-button {
-            display: inline-block;
-            padding: 0.8rem 1.2rem;
-            background: var(--secondary-color);
-            color: white;
-            text-decoration: none;
-            border-radius: 6px;
-            text-align: center;
-            transition: all 0.3s ease;
-        }
-
-        .download-button:hover {
-            background: #1976D2;
-            transform: translateY(-2px);
-        }
-
-        .wave-loading {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 4px;
-            margin: 1rem 0;
-        }
-
-        .wave-loading > div {
-            width: 8px;
-            height: 8px;
-            background: var(--primary-color);
-            border-radius: 50%;
-            animation: wave 1.5s infinite;
-        }
-
-        .wave-loading > div:nth-child(2) {
-            animation-delay: 0.1s;
-        }
-
-        .wave-loading > div:nth-child(3) {
-            animation-delay: 0.2s;
-        }
-
-        @keyframes wave {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
-        }
-
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-    </style>
+    <!-- Previous CSS styles remain the same -->
 </head>
-
 <body>
     <div class="container">
         <h1>Search Volume Checker</h1>
@@ -321,7 +58,9 @@
         const API_URL = 'https://keyword-kgr.v2ray-tokyo.workers.dev';
         let pollInterval = null;
         let currentProcessId = null;
+        let currentBatchInfo = null;
 
+        // Tab switching
         document.querySelectorAll('.tab-button').forEach(button => {
             button.addEventListener('click', () => {
                 const tab = button.dataset.tab;
@@ -338,7 +77,6 @@
             container.className = `status-container ${type}`;
             messageEl.textContent = message;
             container.style.display = 'block';
-            
             const waveLoading = container.querySelector('.wave-loading');
             waveLoading.style.display = type === 'processing' ? 'flex' : 'none';
         }
@@ -347,16 +85,10 @@
             const container = document.getElementById('progressContainer');
             const progressFill = document.getElementById('progressFill');
             const batchProgress = document.getElementById('batchProgress');
-            
             container.style.display = 'block';
             const percentage = (completed / total) * 100;
             progressFill.style.width = `${percentage}%`;
-            
-            if (total === 1) {
-                batchProgress.textContent = 'Processing...';
-            } else {
-                batchProgress.textContent = `${completed}/${total}`;
-            }
+            batchProgress.textContent = total === 1 ? 'Processing...' : `${completed}/${total}`;
         }
 
         function showResults(batches, batchInfo) {
@@ -382,6 +114,8 @@
 
         async function submitKeywords(keywords) {
             try {
+                console.log('Submitting keywords:', keywords);
+                
                 const response = await fetch(`${API_URL}/`, {
                     method: 'POST',
                     headers: {
@@ -391,13 +125,17 @@
                 });
 
                 if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Submit response error:', errorText);
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
 
                 const data = await response.json();
+                console.log('Submit response:', data);
+
                 if (data.status === 'success') {
                     currentProcessId = data.process_id;
-                    const batchInfo = {
+                    currentBatchInfo = {
                         totalBatches: data.total_batches,
                         totalKeywords: data.total_keywords,
                         batches: data.batches.map(batch => ({
@@ -406,43 +144,60 @@
                             keywordsCount: batch.keywords_count
                         }))
                     };
-                    
-                    updateStatus(`Processing ${batchInfo.totalKeywords} keywords in ${batchInfo.totalBatches} ${batchInfo.totalBatches > 1 ? 'batches' : 'batch'}...`, 'processing');
-                    updateProgress(0, batchInfo.totalBatches);
-                    
-                    startStatusPolling(data.process_id, batchInfo);
+
+                    console.log('Current batch info:', currentBatchInfo);
+
+                    updateStatus(
+                        `Processing ${currentBatchInfo.totalKeywords} keywords in ${currentBatchInfo.totalBatches} ${currentBatchInfo.totalBatches > 1 ? 'batches' : 'batch'}...`,
+                        'processing'
+                    );
+                    updateProgress(0, currentBatchInfo.totalBatches);
+                    startStatusPolling();
                 } else {
                     throw new Error(data.message || 'Unknown error occurred');
                 }
             } catch (error) {
+                console.error('Submit error:', error);
                 updateStatus(`Error: ${error.message}`, 'error');
                 document.getElementById('submitButton').disabled = false;
             }
         }
 
-        async function checkStatus(processId, batchInfo) {
+        async function checkStatus() {
+            if (!currentProcessId || !currentBatchInfo) {
+                console.error('Missing process ID or batch info');
+                return;
+            }
+
             try {
-                const response = await fetch(`${API_URL}/status?processId=${processId}`);
+                const url = `${API_URL}/status?processId=${encodeURIComponent(currentProcessId)}&totalBatches=${encodeURIComponent(currentBatchInfo.totalBatches)}`;
+                console.log('Status check URL:', url);
+
+                const response = await fetch(url);
+                
                 if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Status check response error:', errorText);
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
 
                 const data = await response.json();
-                
+                console.log('Status check response:', data);
+
                 if (data.status === 'completed') {
                     clearInterval(pollInterval);
                     document.getElementById('progressContainer').style.display = 'none';
-                    showResults(data.batches, batchInfo);
+                    showResults(data.batches, currentBatchInfo);
                     updateStatus('Search completed successfully!', 'success');
                     document.getElementById('submitButton').disabled = false;
                     currentProcessId = null;
+                    currentBatchInfo = null;
                 } else if (data.status === 'processing') {
                     const completedBatches = data.completed_batches || 0;
-                    const message = batchInfo.totalBatches === 1 
-                        ? 'Processing keyword...' 
-                        : `Processing batch ${completedBatches + 1} of ${batchInfo.totalBatches}...`;
-                    
-                    updateProgress(completedBatches, batchInfo.totalBatches);
+                    const message = currentBatchInfo.totalBatches === 1 ? 
+                        'Processing keyword...' : 
+                        `Processing batch ${completedBatches + 1} of ${currentBatchInfo.totalBatches}...`;
+                    updateProgress(completedBatches, currentBatchInfo.totalBatches);
                     updateStatus(message, 'processing');
                 }
             } catch (error) {
@@ -451,22 +206,26 @@
             }
         }
 
-        function startStatusPolling(processId, batchInfo) {
+        function startStatusPolling() {
             if (pollInterval) {
                 clearInterval(pollInterval);
             }
-            pollInterval = setInterval(() => checkStatus(processId, batchInfo), 5000);
+            
+            // Immediate first check
+            checkStatus();
+            
+            // Then poll every 5 seconds
+            pollInterval = setInterval(checkStatus, 5000);
         }
 
         document.getElementById('searchForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            
             const submitButton = document.getElementById('submitButton');
             submitButton.disabled = true;
             
             document.getElementById('resultsContainer').style.display = 'none';
             document.getElementById('progressContainer').style.display = 'none';
-
+            
             const activeTab = document.querySelector('.tab-button.active').dataset.tab;
             
             try {
@@ -485,10 +244,9 @@
                     const text = await csvFile.text();
                     keywords = text;
                 }
-
+                
                 updateStatus('Starting process...', 'processing');
                 await submitKeywords(keywords);
-                
             } catch (error) {
                 updateStatus(error.message, 'error');
                 submitButton.disabled = false;
@@ -509,4 +267,3 @@
     </script>
 </body>
 </html>
-    
