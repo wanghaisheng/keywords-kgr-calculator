@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Async Processing with SSE</title>
+</head>
+<body>
+    <input type="text" id="keyword" placeholder="Enter keywords separated by commas">
+    <input type="file" id="fileInput">
+    <button onclick="submitKeywords()">Submit</button>
+    <div id="results"></div>
+
+    <script>
+        function submitKeywords() {
+            const keywordInput = document.getElementById('keyword').value;
+            const fileInput = document.getElementById('fileInput').files[0];
+
+            if (keywordInput) {
+                processKeywords(keywordInput.split(','));
+            } else if (fileInput) {
+                processFile(fileInput);
+            }
+        }
+
+        function processKeywords(keywords) {
+            const batchSize = 5; // Adjust batch size as needed
+            for (let i = 0; i < keywords.length; i += batchSize) {
+                const batch = keywords.slice(i, i + batchSize);
+                sendBatchToBackend(batch);
+            }
+
+            startSSE();
+        }
+
+        function processFile(file) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const content = event.target.result;
+                const keywords = content.split(',');
+                processKeywords(keywords);
+            };
+            reader.readAsText(file);
+        }
+
+        function sendBatchToBackend(batch) {
+            fetch('https://api.github.com/repos/{owner}/{repo}/dispatches', {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'token YOUR_GITHUB_TOKEN',
+                    'Accept': 'application/vnd.github.everest-preview+json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    event_type: 'keyword_dispatch',
+                    client_payload: { keywords: batch }
+                })
+            });
+        }
+
+        function startSSE() {
+            const eventSource = new EventSource('/results');
+            eventSource.onmessage = function(event) {
+                const results = JSON.parse(event.data);
+                results.forEach(result => {
+                    document.getElementById('results').innerText += result + '\n';
+                });
+            };
+        }
+    </script>
+</body>
+</html>
