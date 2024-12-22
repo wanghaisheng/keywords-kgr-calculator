@@ -42,28 +42,42 @@
         }
 
         function sendBatchToBackend(batch) {
-            fetch('https://api.github.com/repos/{owner}/{repo}/dispatches', {
+            fetch('https://kgr-sse.v2ray-tokyo.workers.dev/submit', {
                 method: 'POST',
                 headers: {
-                    'Authorization': 'token YOUR_GITHUB_TOKEN',
-                    'Accept': 'application/vnd.github.everest-preview+json',
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({
-                    event_type: 'keyword_dispatch',
-                    client_payload: { keywords: batch }
-                })
+                body: JSON.stringify({ keywords: batch })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Batch submitted:', data);
+            })
+            .catch(error => {
+                console.error('Error submitting batch:', error);
             });
         }
 
         function startSSE() {
-            const eventSource = new EventSource('/results');
+            const eventSource = new EventSource('https://kgr-sse.v2ray-tokyo.workers.dev/results');
             eventSource.onmessage = function(event) {
                 const results = JSON.parse(event.data);
-                results.forEach(result => {
-                    document.getElementById('results').innerText += result + '\n';
-                });
+                displayResults(results);
             };
+
+            eventSource.onerror = function(event) {
+                console.error('SSE error:', event);
+                eventSource.close();
+            };
+        }
+
+        function displayResults(results) {
+            const resultsDiv = document.getElementById('results');
+            results.forEach(result => {
+                const resultElement = document.createElement('div');
+                resultElement.textContent = result;
+                resultsDiv.appendChild(resultElement);
+            });
         }
     </script>
 </body>
