@@ -2,7 +2,7 @@ import sys
 import json
 import time
 import boto3
-from selenium import webdriver
+from getbrowser import *
 
 def main(keywords):
     keywords = json.loads(keywords)
@@ -17,25 +17,40 @@ def main(keywords):
     upload_results_to_r2(results)
 
 def perform_search(keyword):
-    driver = webdriver.Chrome()
-    driver.get(f'https://www.google.com/search?q={keyword}')
-    
-    results = []
-    for element in driver.find_elements_by_css_selector('h3'):
-        results.append(element.text)
+    driver = setup_Chrome()
+    searchQuery=f'intitle:"{keyword}"'
+    driver.get(f'https://www.google.com/search?q={searchQuery}')
 
+    results = []
+    for element in driver.ele('#result-stats'):
+        results.append(element.text)
+    
     driver.quit()
     return results
 
+
 def upload_results_to_r2(results):
+    # Get environment variables
+    access_key_id = os.getenv('R2_ACCESS_KEY_ID')
+    secret_access_key = os.getenv('R2_SECRET_ACCESS_KEY')
+    bucket_name = os.getenv('R2_BUCKET_NAME')
+    endpoint_url = os.getenv('R2_ENDPOINT_URL')
+
+    # Initialize the s3 client with the R2 endpoint
     s3 = boto3.client(
         's3',
-        endpoint_url='https://<your-cloudflare-r2-endpoint>',
-        aws_access_key_id='<your-access-key>',
-        aws_secret_access_key='<your-secret-key>'
+        endpoint_url=endpoint_url,
+        aws_access_key_id=access_key_id,
+        aws_secret_access_key=secret_access_key
     )
+
+    # Read the results from the file
+    # with open(file_path, 'r') as f:
+        # results = json.load(f)
+
+    # Upload results to R2
     s3.put_object(
-        Bucket='your-r2-bucket',
+        Bucket=bucket_name,
         Key=f'results/{time.time()}.json',
         Body=json.dumps(results)
     )
