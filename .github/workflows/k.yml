@@ -1,0 +1,35 @@
+name: Keyword Processing
+
+on:
+  repository_dispatch:
+    types: [keyword_dispatch]
+
+jobs:
+  process-keywords:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install selenium boto3
+
+      - name: Process Keywords
+        env:
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET_NAME: your-r2-bucket
+          R2_ENDPOINT_URL: https://<your-cloudflare-r2-endpoint>
+        run: |
+          python process_keywords.py "${{ github.event.client_payload.keywords }}"
+
+      - name: Upload results to R2
+        run: |
+          aws s3 cp results.json s3://${{ env.R2_BUCKET_NAME }}/results/${{ github.run_id }}.json --endpoint-url ${{ env.R2_ENDPOINT_URL }}
