@@ -21,14 +21,21 @@ def main(keywords):
 
 def perform_search(keyword):
     browser = setup_chrome()
-    search_query = f'intitle:"{keyword}"'
     driver = browser.new_tab()
+
+    search_query = f'intitle:"{keyword}"'
+
     driver.get(f'https://www.google.com/search?q={search_query}')
 
     element = driver.ele('#result-stats')
-    data = element.text
+    intitlecount = element.text
+    search_query = f'allintitle:"{keyword}"'
+    driver.get(f'https://www.google.com/search?q={search_query}')
+    element = driver.ele('#result-stats')
+    allintitlecount = element.text
+
     driver.close()
-    return data
+    return {'keyword':keyword,'intitle':intitlecount,'allintitle':allintitlecount}
 
 def upload_results_to_r2():
     # Get environment variables
