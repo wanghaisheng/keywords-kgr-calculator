@@ -25,13 +25,10 @@ def perform_search(keyword):
     driver=browser.new_tab()
     driver.get(f'https://www.google.com/search?q={search_query}')
 
-    results = []
-    elements = driver.ele('#result-stats')
-    for element in elements:
-        results.append(element.text)
-    
-    driver.quit()
-    return results
+    element = driver.ele('#result-stats')
+        
+    driver.close()
+    return element.text
 
 def upload_results_to_r2():
     # Get environment variables
