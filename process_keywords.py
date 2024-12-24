@@ -20,8 +20,9 @@ def main(keywords):
     upload_results_to_r2()
 
 def perform_search(keyword):
-    driver = setup_chrome()
+    browser = setup_chrome()
     search_query = f'intitle:"{keyword}"'
+    driver=browser.new_tab()
     driver.get(f'https://www.google.com/search?q={search_query}')
 
     results = []
