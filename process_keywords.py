@@ -1,8 +1,9 @@
 import sys
 import json
 import time
+import os
 import boto3
-from getbrowser import *
+from getbrowser import setup_Chrome
 
 def main(keywords):
     keywords = json.loads(keywords)
@@ -14,27 +15,30 @@ def main(keywords):
     with open('results.json', 'w') as f:
         json.dump(results, f)
 
-    upload_results_to_r2(results)
+    upload_results_to_r2()
 
 def perform_search(keyword):
     driver = setup_Chrome()
-    searchQuery=f'intitle:"{keyword}"'
-    driver.get(f'https://www.google.com/search?q={searchQuery}')
+    search_query = f'intitle:"{keyword}"'
+    driver.get(f'https://www.google.com/search?q={search_query}')
 
     results = []
-    for element in driver.ele('#result-stats'):
+    elements = driver.find_elements_by_css_selector('#result-stats')
+    for element in elements:
         results.append(element.text)
     
     driver.quit()
     return results
 
-
-def upload_results_to_r2(results):
+def upload_results_to_r2():
     # Get environment variables
     access_key_id = os.getenv('R2_ACCESS_KEY_ID')
     secret_access_key = os.getenv('R2_SECRET_ACCESS_KEY')
     bucket_name = os.getenv('R2_BUCKET_NAME')
     endpoint_url = os.getenv('R2_ENDPOINT_URL')
+
+    if not all([access_key_id, secret_access_key, bucket_name, endpoint_url]):
+        raise ValueError("One or more environment variables are missing")
 
     # Initialize the s3 client with the R2 endpoint
     s3 = boto3.client(
@@ -45,15 +49,12 @@ def upload_results_to_r2(results):
     )
 
     # Read the results from the file
-    # with open(file_path, 'r') as f:
-        # results = json.load(f)
-
-    # Upload results to R2
-    s3.put_object(
-        Bucket=bucket_name,
-        Key=f'results/{time.time()}.json',
-        Body=json.dumps(results)
-    )
+    with open('results.json', 'rb') as f:
+        s3.put_object(
+            Bucket=bucket_name,
+            Key=f'results/{int(time.time())}.json',
+            Body=f
+        )
 
 if __name__ == "__main__":
     main(sys.argv[1])
