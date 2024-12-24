@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Keyword Processing Dashboard</title>
+    <!-- Development only - Replace with local installation for production -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
@@ -13,6 +14,7 @@
         <div class="mb-8 text-center">
             <h1 class="text-3xl font-bold text-gray-800 mb-2">Keyword Processing Dashboard</h1>
             <p class="text-gray-600">Process multiple keywords and track their search results</p>
+            <p class="text-sm text-gray-500 mt-2">User: wanghaisheng</p>
         </div>
 
         <!-- Input Section -->
@@ -50,8 +52,10 @@
                 <!-- Submit Button -->
                 <button 
                     onclick="submitKeywords()"
-                    class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                    class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors flex items-center justify-center"
+                    id="submitButton"
                 >
+                    <i class="fas fa-play mr-2"></i>
                     Process Keywords
                 </button>
             </div>
@@ -62,6 +66,9 @@
             <h2 class="text-xl font-semibold text-gray-800 mb-4">Progress</h2>
             <div id="progress" class="text-gray-600">
                 <!-- Progress will be updated here -->
+            </div>
+            <div id="lastUpdate" class="text-xs text-gray-500 mt-2">
+                <!-- Last update timestamp will be shown here -->
             </div>
         </div>
 
@@ -78,6 +85,10 @@
         class KeywordProcessor {
             constructor() {
                 this.apiUrl = 'https://kgrsse.v2ray-tokyo.workers.dev';
+                this.eventSource = null;
+                this.retryCount = 0;
+                this.maxRetries = 3;
+                this.retryDelay = 5000;
                 this.setupEventListeners();
             }
 
@@ -88,23 +99,40 @@
                         e.target.parentElement.querySelector('span').textContent = fileName;
                     }
                 });
+
+                window.addEventListener('beforeunload', () => {
+                    this.closeSSEConnection();
+                });
+            }
+
+            closeSSEConnection() {
+                if (this.eventSource) {
+                    this.eventSource.close();
+                    this.eventSource = null;
+                }
             }
 
             async submitKeywords() {
-                const keywordInput = document.getElementById('keyword').value;
-                const fileInput = document.getElementById('fileInput').files[0];
+                const submitButton = document.getElementById('submitButton');
+                submitButton.disabled = true;
+                submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
 
                 try {
+                    const keywordInput = document.getElementById('keyword').value;
+                    const fileInput = document.getElementById('fileInput').files[0];
+
                     const keywords = await this.getKeywords(keywordInput, fileInput);
                     if (keywords.length === 0) {
-                        this.updateProgress('Please enter keywords or upload a file');
-                        return;
+                        throw new Error('Please enter keywords or upload a file');
                     }
 
                     await this.sendKeywordsToBackend(keywords);
                 } catch (error) {
                     console.error('Error processing keywords:', error);
-                    this.updateProgress(`Error: ${error.message}`);
+                    this.updateProgress(`Error: ${error.message}`, 'error');
+                } finally {
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = '<i class="fas fa-play mr-2"></i>Process Keywords';
                 }
             }
 
@@ -129,7 +157,7 @@
 
             async sendKeywordsToBackend(keywords) {
                 try {
-                    this.updateProgress('Submitting keywords...');
+                    this.updateProgress('Submitting keywords...', 'info');
                     
                     const response = await fetch(`${this.apiUrl}/submit`, {
                         method: 'POST',
@@ -137,45 +165,64 @@
                             'Content-Type': 'application/json',
                             'Accept': 'application/json'
                         },
-                        body: JSON.stringify({ keywords })
+                        body: JSON.stringify({ 
+                            keywords,
+                            timestamp: new Date().toISOString(),
+                            user: 'wanghaisheng'
+                        })
                     });
 
-                    const data = await response.json();
-                    
                     if (!response.ok) {
-                        throw new Error(data.error || 'Failed to submit keywords');
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || 'Failed to submit keywords');
                     }
 
-                    this.updateProgress(`Processing ${data.totalBatches} batches...`);
+                    const data = await response.json();
+                    this.updateProgress(`Processing ${data.totalBatches} batches...`, 'info');
                     this.startSSE(data.batchGroupId);
 
                 } catch (error) {
                     console.error('Submission error:', error);
-                    this.updateProgress(`Error: ${error.message}`);
+                    this.updateProgress(`Error: ${error.message}`, 'error');
+                    throw error;
                 }
             }
 
             startSSE(batchGroupId) {
-                const eventSource = new EventSource(`${this.apiUrl}/results?batchGroupId=${batchGroupId}`);
+                this.closeSSEConnection();
+
+                this.eventSource = new EventSource(`${this.apiUrl}/results?batchGroupId=${batchGroupId}`);
                 
-                eventSource.onmessage = (event) => {
+                this.eventSource.onmessage = (event) => {
                     try {
                         const data = JSON.parse(event.data);
                         this.handleSSEMessage(data);
+                        this.updateLastUpdateTime(data.timestamp);
                     } catch (error) {
                         console.error('Error parsing SSE message:', error);
+                        this.updateProgress('Error processing server message', 'error');
                     }
                 };
 
-                eventSource.onerror = (error) => {
+                this.eventSource.onerror = (error) => {
                     console.error('SSE connection error:', error);
-                    eventSource.close();
-                    this.updateProgress('Connection error. Please try again.');
+                    
+                    if (this.eventSource.readyState === EventSource.CLOSED) {
+                        if (this.retryCount < this.maxRetries) {
+                            this.retryCount++;
+                            this.updateProgress(`Connection lost. Retrying (${this.retryCount}/${this.maxRetries})...`, 'warning');
+                            setTimeout(() => this.startSSE(batchGroupId), this.retryDelay);
+                        } else {
+                            this.updateProgress('Connection failed after multiple attempts', 'error');
+                            this.closeSSEConnection();
+                        }
+                    }
                 };
 
-                eventSource.onopen = () => {
+                this.eventSource.onopen = () => {
                     console.log('SSE connection established');
-                    this.updateProgress('Connected to server...');
+                    this.retryCount = 0;
+                    this.updateProgress('Connected to server', 'success');
                 };
             }
 
@@ -184,31 +231,49 @@
 
                 switch (data.status) {
                     case 'connected':
-                        this.updateProgress('Connected to server...');
+                        this.updateProgress('Connected to server', 'success');
                         break;
                     case 'progress':
-                        this.updateProgress(`Completed ${data.completedBatches} of ${data.totalBatches} batches`);
+                        this.updateProgress(
+                            `Processing: ${data.completedBatches}/${data.totalBatches} batches`,
+                            'info'
+                        );
                         if (data.results?.length > 0) {
                             this.displayResults(data.results);
                         }
                         break;
                     case 'completed':
-                        this.updateProgress('Processing completed');
+                        this.updateProgress('Processing completed', 'success');
+                        this.closeSSEConnection();
                         break;
                     case 'error':
-                        this.updateProgress(`Error: ${data.error}`);
+                        this.updateProgress(`Error: ${data.error}`, 'error');
+                        this.closeSSEConnection();
                         break;
                 }
             }
 
-            updateProgress(message) {
+            updateProgress(message, type = 'info') {
                 const progressDiv = document.getElementById('progress');
+                const icons = {
+                    info: 'fa-info-circle text-blue-500',
+                    error: 'fa-exclamation-circle text-red-500',
+                    success: 'fa-check-circle text-green-500',
+                    warning: 'fa-exclamation-triangle text-yellow-500'
+                };
+
                 progressDiv.innerHTML = `
                     <div class="flex items-center space-x-2">
-                        <i class="fas fa-info-circle text-blue-500"></i>
+                        <i class="fas ${icons[type]}"></i>
                         <span>${message}</span>
                     </div>
                 `;
+            }
+
+            updateLastUpdateTime(timestamp) {
+                const lastUpdateDiv = document.getElementById('lastUpdate');
+                const date = new Date(timestamp);
+                lastUpdateDiv.textContent = `Last updated: ${date.toLocaleString()} UTC`;
             }
 
             displayResults(results) {
@@ -222,12 +287,15 @@
                             </div>
                             <div>
                                 <span class="text-sm text-gray-500">Intitle Count</span>
-                                <p class="font-medium">${result.intitle}</p>
+                                <p class="font-medium">${result.intitle.toLocaleString()}</p>
                             </div>
                             <div>
                                 <span class="text-sm text-gray-500">Allintitle Count</span>
-                                <p class="font-medium">${result.allintitle}</p>
+                                <p class="font-medium">${result.allintitle.toLocaleString()}</p>
                             </div>
+                        </div>
+                        <div class="text-xs text-gray-500 mt-2">
+                            Processed: ${new Date(result.timestamp).toLocaleString()} UTC
                         </div>
                     </div>
                 `).join('');
