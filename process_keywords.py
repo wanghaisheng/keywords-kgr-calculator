@@ -3,7 +3,7 @@ import json
 import time
 import os
 import boto3
-from getbrowser import setup_Chrome
+from getbrowser import setup_chrome
 
 def main(keywords):
     keywords = json.loads(keywords)
@@ -18,7 +18,7 @@ def main(keywords):
     upload_results_to_r2()
 
 def perform_search(keyword):
-    driver = setup_Chrome()
+    driver = setup_chrome()
     search_query = f'intitle:"{keyword}"'
     driver.get(f'https://www.google.com/search?q={search_query}')
 
