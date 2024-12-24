@@ -5,7 +5,7 @@
 </head>
 <body>
     <input type="text" id="keyword" placeholder="Enter keywords separated by commas">
-    <input type="file" id="fileInput">
+    <input type="file" id="fileInput" accept=".csv">
     <button onclick="submitKeywords()">Submit</button>
     <div id="results"></div>
 
@@ -15,7 +15,7 @@
             const fileInput = document.getElementById('fileInput').files[0];
 
             if (keywordInput) {
-                processKeywords(keywordInput.split(','));
+                processKeywords(keywordInput.split(',').map(keyword => keyword.trim()).filter(Boolean));
             } else if (fileInput) {
                 processFile(fileInput);
             }
@@ -35,7 +35,7 @@
             const reader = new FileReader();
             reader.onload = function(event) {
                 const content = event.target.result;
-                const keywords = content.split(',');
+                const keywords = content.split(',').map(keyword => keyword.trim()).filter(Boolean);
                 processKeywords(keywords);
             };
             reader.readAsText(file);
@@ -73,9 +73,15 @@
 
         function displayResults(results) {
             const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = ''; // Clear previous results
+
             results.forEach(result => {
                 const resultElement = document.createElement('div');
-                resultElement.textContent = result;
+                resultElement.innerHTML = `
+                    <p>Keyword: ${result.keyword}</p>
+                    <p>Intitle Count: ${result.intitle}</p>
+                    <p>Allintitle Count: ${result.allintitle}</p>
+                `;
                 resultsDiv.appendChild(resultElement);
             });
         }
