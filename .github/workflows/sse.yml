@@ -9,6 +9,9 @@ on:
       batchId:
         description: 'Batch identifier for retrieving results'
         required: true
+      batchGroupId:
+        description: 'Group identifier for tracking multiple batches'
+        required: true
 
 jobs:
   process-keywords:
@@ -34,4 +37,4 @@ jobs:
           R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
           R2_ENDPOINT_URL: ${{ secrets.R2_ENDPOINT_URL }}
         run: |
-          python process_keywords.py "${{ github.event.inputs.keywords }}" "${{ github.event.inputs.batchId }}"
+          python process_keywords.py "${{ github.event.inputs.keywords }}" "${{ github.event.inputs.batchId }}" "${{ github.event.inputs.batchGroupId }}"
