@@ -12,10 +12,10 @@ def main(keywords):
     results = []
 
     for keyword in keywords:
-        results.extend(perform_search(keyword.strip()))  # Ensure each keyword is stripped of leading/trailing spaces
+        results.append(perform_search(keyword.strip()))  # Ensure each keyword is stripped of leading/trailing spaces
 
     with open('results.json', 'w') as f:
-        print('reesults',results)
+        print('Results:', results)
         json.dump(results, f)
 
     upload_results_to_r2()
@@ -24,19 +24,20 @@ def perform_search(keyword):
     browser = setup_chrome()
     driver = browser.new_tab()
 
+    # Perform the first search
     search_query = f'intitle:"{keyword}"'
-
     driver.get(f'https://www.google.com/search?q={search_query}')
-
     element = driver.ele('#result-stats')
-    intitlecount = element.text
+    intitle_count = element.text
+
+    # Perform the second search
     search_query = f'allintitle:"{keyword}"'
     driver.get(f'https://www.google.com/search?q={search_query}')
     element = driver.ele('#result-stats')
-    allintitlecount = element.text
+    allintitle_count = element.text
 
     driver.close()
-    return {'keyword':keyword,'intitle':intitlecount,'allintitle':allintitlecount}
+    return {'keyword': keyword, 'intitle': intitle_count, 'allintitle': allintitle_count}
 
 def upload_results_to_r2():
     # Get environment variables
