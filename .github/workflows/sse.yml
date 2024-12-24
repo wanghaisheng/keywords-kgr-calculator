@@ -4,6 +4,10 @@ on:
   repository_dispatch:
     types: [keyword_dispatch]
   workflow_dispatch:
+    inputs:
+      keywords:
+        description: 'Enter keywords'
+        required: false
 
 jobs:
   process-keywords:
