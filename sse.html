@@ -61,8 +61,17 @@
         function startSSE() {
             const eventSource = new EventSource('https://kgrsse.v2ray-tokyo.workers.dev/results');
             eventSource.onmessage = function(event) {
-                const results = JSON.parse(event.data);
-                displayResults(results);
+                try {
+                    const data = event.data;
+                    if (data === 'Connected') {
+                        console.log('SSE connected');
+                        return;
+                    }
+                    const results = JSON.parse(data);
+                    displayResults(results);
+                } catch (error) {
+                    console.error('Error parsing SSE data:', error);
+                }
             };
 
             eventSource.onerror = function(event) {
