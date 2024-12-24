@@ -15,20 +15,10 @@
             const fileInput = document.getElementById('fileInput').files[0];
 
             if (keywordInput) {
-                processKeywords(keywordInput.split(',').map(keyword => keyword.trim()).filter(Boolean));
+                sendKeywordsToBackend(keywordInput.split(',').map(keyword => keyword.trim()).filter(Boolean));
             } else if (fileInput) {
                 processFile(fileInput);
             }
-        }
-
-        function processKeywords(keywords) {
-            const batchSize = 5; // Adjust batch size as needed
-            for (let i = 0; i < keywords.length; i += batchSize) {
-                const batch = keywords.slice(i, i + batchSize);
-                sendBatchToBackend(batch);
-            }
-
-            startSSE();
         }
 
         function processFile(file) {
@@ -36,42 +26,34 @@
             reader.onload = function(event) {
                 const content = event.target.result;
                 const keywords = content.split(',').map(keyword => keyword.trim()).filter(Boolean);
-                processKeywords(keywords);
+                sendKeywordsToBackend(keywords);
             };
             reader.readAsText(file);
         }
 
-        function sendBatchToBackend(batch) {
+        function sendKeywordsToBackend(keywords) {
             fetch('https://kgrsse.v2ray-tokyo.workers.dev/submit', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ keywords: batch })
+                body: JSON.stringify({ keywords: keywords })
             })
             .then(response => response.json())
             .then(data => {
                 console.log('Batch submitted:', data);
+                startSSE(data.batchId);
             })
             .catch(error => {
                 console.error('Error submitting batch:', error);
             });
         }
 
-        function startSSE() {
-            const eventSource = new EventSource('https://kgrsse.v2ray-tokyo.workers.dev/results');
+        function startSSE(batchId) {
+            const eventSource = new EventSource(`https://kgrsse.v2ray-tokyo.workers.dev/results?batchId=${batchId}`);
             eventSource.onmessage = function(event) {
-                try {
-                    const data = event.data;
-                    if (data === 'Connected') {
-                        console.log('SSE connected');
-                        return;
-                    }
-                    const results = JSON.parse(data);
-                    displayResults(results);
-                } catch (error) {
-                    console.error('Error parsing SSE data:', error);
-                }
+                const results = JSON.parse(event.data);
+                displayResults(results);
             };
 
             eventSource.onerror = function(event) {
