@@ -32,12 +32,3 @@ jobs:
           R2_ENDPOINT_URL: ${{ secrets.R2_ENDPOINT_URL }}
         run: |
           python process_keywords.py "${{ github.event.inputs.keywords }}"
-
-      - name: Upload results to R2
-        env:
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
-          R2_ENDPOINT_URL: ${{ secrets.R2_ENDPOINT_URL }}
-        run: |
-          aws s3 cp results.json s3://${{ env.R2_BUCKET_NAME }}/results/${{ github.run_id }}.json --endpoint-url ${{ env.R2_ENDPOINT_URL }}
