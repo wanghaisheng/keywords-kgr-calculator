@@ -42,7 +42,7 @@
         }
 
         function sendBatchToBackend(batch) {
-            fetch('https://kgr-sse.v2ray-tokyo.workers.dev/submit', {
+            fetch('https://kgrsse.v2ray-tokyo.workers.dev/submit', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -59,7 +59,7 @@
         }
 
         function startSSE() {
-            const eventSource = new EventSource('https://kgr-sse.v2ray-tokyo.workers.dev/results');
+            const eventSource = new EventSource('https://kgrsse.v2ray-tokyo.workers.dev/results');
             eventSource.onmessage = function(event) {
                 const results = JSON.parse(event.data);
                 displayResults(results);
