@@ -26,9 +26,9 @@ def perform_search(keyword):
     driver.get(f'https://www.google.com/search?q={search_query}')
 
     element = driver.ele('#result-stats')
-        
+    data=element.text
     driver.close()
-    return element.text
+    return data
 
 def upload_results_to_r2():
     # Get environment variables
