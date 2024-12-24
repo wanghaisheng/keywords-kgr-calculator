@@ -22,11 +22,11 @@ def main(keywords):
 def perform_search(keyword):
     browser = setup_chrome()
     search_query = f'intitle:"{keyword}"'
-    driver=browser.new_tab()
+    driver = browser.new_tab()
     driver.get(f'https://www.google.com/search?q={search_query}')
 
     element = driver.ele('#result-stats')
-    data=element.text
+    data = element.text
     driver.close()
     return data
 
