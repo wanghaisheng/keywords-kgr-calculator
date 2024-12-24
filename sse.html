@@ -1,121 +1,254 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Async Processing with SSE</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Keyword Processing Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
-<body>
-    <input type="text" id="keyword" placeholder="Enter keywords separated by commas">
-    <input type="file" id="fileInput" accept=".csv">
-    <button onclick="submitKeywords()">Submit</button>
-    <div id="progress"></div>
-    <div id="results"></div>
+<body class="bg-gray-100 min-h-screen p-8">
+    <div class="max-w-4xl mx-auto">
+        <!-- Header -->
+        <div class="mb-8 text-center">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">Keyword Processing Dashboard</h1>
+            <p class="text-gray-600">Process multiple keywords and track their search results</p>
+        </div>
+
+        <!-- Input Section -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <div class="space-y-4">
+                <!-- Text Input -->
+                <div>
+                    <label for="keyword" class="block text-sm font-medium text-gray-700 mb-2">
+                        Enter Keywords
+                    </label>
+                    <textarea 
+                        id="keyword" 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Enter keywords separated by commas"
+                        rows="3"
+                    ></textarea>
+                </div>
+
+                <!-- File Input -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Or Upload CSV File
+                    </label>
+                    <div class="flex items-center justify-center w-full">
+                        <label class="w-full flex flex-col items-center px-4 py-6 bg-white rounded-lg border-2 border-gray-300 border-dashed cursor-pointer hover:bg-gray-50">
+                            <div class="flex items-center">
+                                <i class="fas fa-cloud-upload-alt text-gray-400 text-3xl mr-2"></i>
+                                <span class="text-gray-600">Choose a file</span>
+                            </div>
+                            <input id="fileInput" type="file" accept=".csv" class="hidden" />
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <button 
+                    onclick="submitKeywords()"
+                    class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                >
+                    Process Keywords
+                </button>
+            </div>
+        </div>
+
+        <!-- Progress Section -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">Progress</h2>
+            <div id="progress" class="text-gray-600">
+                <!-- Progress will be updated here -->
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">Results</h2>
+            <div id="results" class="space-y-4">
+                <!-- Results will be displayed here -->
+            </div>
+        </div>
+    </div>
 
     <script>
-        function submitKeywords() {
-            const keywordInput = document.getElementById('keyword').value;
-            const fileInput = document.getElementById('fileInput').files[0];
-
-            if (keywordInput) {
-                sendKeywordsToBackend(keywordInput.split(',').map(keyword => keyword.trim()).filter(Boolean));
-            } else if (fileInput) {
-                processFile(fileInput);
+        class KeywordProcessor {
+            constructor() {
+                this.apiUrl = 'https://kgrsse.v2ray-tokyo.workers.dev';
+                this.setupEventListeners();
             }
-        }
 
-        function processFile(file) {
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                const content = event.target.result;
-                const keywords = content.split(',').map(keyword => keyword.trim()).filter(Boolean);
-                sendKeywordsToBackend(keywords);
-            };
-            reader.readAsText(file);
-        }
-
-        function sendKeywordsToBackend(keywords) {
-            console.log('Sending keywords:', keywords);
-            fetch('https://kgrsse.v2ray-tokyo.workers.dev/submit', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({ keywords: keywords })
-            })
-            .then(async response => {
-                const text = await response.text();
-                console.log('Raw response:', text);
-                try {
-                    return JSON.parse(text);
-                } catch (e) {
-                    throw new Error(`Failed to parse response: ${text}`);
-                }
-            })
-            .then(data => {
-                console.log('Submission response:', data);
-                if (data.batchGroupId) {
-                    updateProgress(`Processing ${data.totalBatches} batches...`);
-                    startSSE(data.batchGroupId);
-                } else {
-                    console.error('Error:', data.error);
-                    updateProgress('Error: ' + data.error);
-                }
-            })
-            .catch(error => {
-                console.error('Error submitting batch:', error);
-                updateProgress('Error: ' + error.message);
-            });
-        }
-
-        function startSSE(batchGroupId) {
-            const eventSource = new EventSource(`https://kgrsse.v2ray-tokyo.workers.dev/results?batchGroupId=${batchGroupId}`);
-            
-            eventSource.onmessage = function(event) {
-                console.log('SSE message received:', event.data);
-                try {
-                    const data = JSON.parse(event.data);
-                    if (data.status === 'progress') {
-                        updateProgress(`Completed ${data.completedBatches} of ${data.totalBatches} batches`);
-                        if (data.results.length > 0) {
-                            displayResults(data.results);
-                        }
+            setupEventListeners() {
+                document.getElementById('fileInput').addEventListener('change', (e) => {
+                    const fileName = e.target.files[0]?.name;
+                    if (fileName) {
+                        e.target.parentElement.querySelector('span').textContent = fileName;
                     }
-                } catch (error) {
-                    console.error('Error parsing SSE message:', error);
-                }
-            };
-
-            eventSource.onerror = function(event) {
-                console.error('SSE error:', event);
-                eventSource.close();
-                updateProgress('Connection closed');
-            };
-        }
-
-        function updateProgress(message) {
-            const progressDiv = document.getElementById('progress');
-            progressDiv.textContent = message;
-        }
-
-        function displayResults(results) {
-            const resultsDiv = document.getElementById('results');
-            resultsDiv.innerHTML = ''; // Clear previous results
-
-            if (Array.isArray(results)) {
-                results.forEach(result => {
-                    const resultElement = document.createElement('div');
-                    resultElement.innerHTML = `
-                        <p>Keyword: ${result.keyword}</p>
-                        <p>Intitle Count: ${result.intitle}</p>
-                        <p>Allintitle Count: ${result.allintitle}</p>
-                    `;
-                    resultsDiv.appendChild(resultElement);
                 });
-            } else {
-                const resultElement = document.createElement('div');
-                resultElement.textContent = 'Received invalid results format';
-                resultsDiv.appendChild(resultElement);
             }
+
+            async submitKeywords() {
+                const keywordInput = document.getElementById('keyword').value;
+                const fileInput = document.getElementById('fileInput').files[0];
+
+                try {
+                    const keywords = await this.getKeywords(keywordInput, fileInput);
+                    if (keywords.length === 0) {
+                        this.updateProgress('Please enter keywords or upload a file');
+                        return;
+                    }
+
+                    await this.sendKeywordsToBackend(keywords);
+                } catch (error) {
+                    console.error('Error processing keywords:', error);
+                    this.updateProgress(`Error: ${error.message}`);
+                }
+            }
+
+            async getKeywords(textInput, file) {
+                if (textInput) {
+                    return textInput.split(',').map(k => k.trim()).filter(Boolean);
+                } else if (file) {
+                    const text = await this.readFile(file);
+                    return text.split(',').map(k => k.trim()).filter(Boolean);
+                }
+                return [];
+            }
+
+            readFile(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => resolve(e.target.result);
+                    reader.onerror = (e) => reject(new Error('Failed to read file'));
+                    reader.readAsText(file);
+                });
+            }
+
+            async sendKeywordsToBackend(keywords) {
+                try {
+                    this.updateProgress('Submitting keywords...');
+                    
+                    const response = await fetch(`${this.apiUrl}/submit`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({ keywords })
+                    });
+
+                    const data = await response.json();
+                    
+                    if (!response.ok) {
+                        throw new Error(data.error || 'Failed to submit keywords');
+                    }
+
+                    this.updateProgress(`Processing ${data.totalBatches} batches...`);
+                    this.startSSE(data.batchGroupId);
+
+                } catch (error) {
+                    console.error('Submission error:', error);
+                    this.updateProgress(`Error: ${error.message}`);
+                }
+            }
+
+            startSSE(batchGroupId) {
+                const eventSource = new EventSource(`${this.apiUrl}/results?batchGroupId=${batchGroupId}`);
+                
+                eventSource.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                        this.handleSSEMessage(data);
+                    } catch (error) {
+                        console.error('Error parsing SSE message:', error);
+                    }
+                };
+
+                eventSource.onerror = (error) => {
+                    console.error('SSE connection error:', error);
+                    eventSource.close();
+                    this.updateProgress('Connection error. Please try again.');
+                };
+
+                eventSource.onopen = () => {
+                    console.log('SSE connection established');
+                    this.updateProgress('Connected to server...');
+                };
+            }
+
+            handleSSEMessage(data) {
+                console.log('SSE message:', data);
+
+                switch (data.status) {
+                    case 'connected':
+                        this.updateProgress('Connected to server...');
+                        break;
+                    case 'progress':
+                        this.updateProgress(`Completed ${data.completedBatches} of ${data.totalBatches} batches`);
+                        if (data.results?.length > 0) {
+                            this.displayResults(data.results);
+                        }
+                        break;
+                    case 'completed':
+                        this.updateProgress('Processing completed');
+                        break;
+                    case 'error':
+                        this.updateProgress(`Error: ${data.error}`);
+                        break;
+                }
+            }
+
+            updateProgress(message) {
+                const progressDiv = document.getElementById('progress');
+                progressDiv.innerHTML = `
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-info-circle text-blue-500"></i>
+                        <span>${message}</span>
+                    </div>
+                `;
+            }
+
+            displayResults(results) {
+                const resultsDiv = document.getElementById('results');
+                resultsDiv.innerHTML = results.map(result => `
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <div class="grid grid-cols-3 gap-4">
+                            <div>
+                                <span class="text-sm text-gray-500">Keyword</span>
+                                <p class="font-medium">${this.escapeHtml(result.keyword)}</p>
+                            </div>
+                            <div>
+                                <span class="text-sm text-gray-500">Intitle Count</span>
+                                <p class="font-medium">${result.intitle}</p>
+                            </div>
+                            <div>
+                                <span class="text-sm text-gray-500">Allintitle Count</span>
+                                <p class="font-medium">${result.allintitle}</p>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            escapeHtml(unsafe) {
+                return unsafe
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#039;");
+            }
+        }
+
+        // Initialize the processor
+        const processor = new KeywordProcessor();
+
+        // Global submit function
+        function submitKeywords() {
+            processor.submitKeywords();
         }
     </script>
 </body>
