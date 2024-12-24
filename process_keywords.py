@@ -6,7 +6,7 @@ import boto3
 import re
 from getbrowser import setup_chrome
 
-def main(keywords):
+def main(keywords, batch_id):
     # Split keywords string into a list if it contains commas
     keywords = keywords.split(",") if "," in keywords else [keywords]
     
@@ -19,7 +19,7 @@ def main(keywords):
         print('Results:', results)
         json.dump(results, f)
 
-    upload_results_to_r2()
+    upload_results_to_r2(batch_id)
 
 def perform_search(keyword):
     browser = setup_chrome()
@@ -47,7 +47,7 @@ def extract_count(result_stats):
         return match.group(1).replace(',', '')  # Remove commas for easier processing
     return '0'
 
-def upload_results_to_r2():
+def upload_results_to_r2(batch_id):
     # Get environment variables
     access_key_id = os.getenv('R2_ACCESS_KEY_ID')
     secret_access_key = os.getenv('R2_SECRET_ACCESS_KEY')
@@ -69,9 +69,9 @@ def upload_results_to_r2():
     with open('results.json', 'rb') as f:
         s3.put_object(
             Bucket=bucket_name,
-            Key=f'results/{int(time.time())}.json',
+            Key=f'results/{batch_id}.json',
             Body=f
         )
 
 if __name__ == "__main__":
-    main(sys.argv[1])
+    main(sys.argv[1], sys.argv[2])
