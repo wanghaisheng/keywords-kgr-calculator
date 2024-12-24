@@ -7,6 +7,7 @@
     <input type="text" id="keyword" placeholder="Enter keywords separated by commas">
     <input type="file" id="fileInput" accept=".csv">
     <button onclick="submitKeywords()">Submit</button>
+    <div id="progress"></div>
     <div id="results"></div>
 
     <script>
@@ -32,49 +33,89 @@
         }
 
         function sendKeywordsToBackend(keywords) {
+            console.log('Sending keywords:', keywords);
             fetch('https://kgrsse.v2ray-tokyo.workers.dev/submit', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
                 },
                 body: JSON.stringify({ keywords: keywords })
             })
-            .then(response => response.json())
+            .then(async response => {
+                const text = await response.text();
+                console.log('Raw response:', text);
+                try {
+                    return JSON.parse(text);
+                } catch (e) {
+                    throw new Error(`Failed to parse response: ${text}`);
+                }
+            })
             .then(data => {
-                console.log('Batch submitted:', data);
-                startSSE(data.batchId);
+                console.log('Submission response:', data);
+                if (data.batchGroupId) {
+                    updateProgress(`Processing ${data.totalBatches} batches...`);
+                    startSSE(data.batchGroupId);
+                } else {
+                    console.error('Error:', data.error);
+                    updateProgress('Error: ' + data.error);
+                }
             })
             .catch(error => {
                 console.error('Error submitting batch:', error);
+                updateProgress('Error: ' + error.message);
             });
         }
 
-        function startSSE(batchId) {
-            const eventSource = new EventSource(`https://kgrsse.v2ray-tokyo.workers.dev/results?batchId=${batchId}`);
+        function startSSE(batchGroupId) {
+            const eventSource = new EventSource(`https://kgrsse.v2ray-tokyo.workers.dev/results?batchGroupId=${batchGroupId}`);
+            
             eventSource.onmessage = function(event) {
-                const results = JSON.parse(event.data);
-                displayResults(results);
+                console.log('SSE message received:', event.data);
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.status === 'progress') {
+                        updateProgress(`Completed ${data.completedBatches} of ${data.totalBatches} batches`);
+                        if (data.results.length > 0) {
+                            displayResults(data.results);
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error parsing SSE message:', error);
+                }
             };
 
             eventSource.onerror = function(event) {
                 console.error('SSE error:', event);
                 eventSource.close();
+                updateProgress('Connection closed');
             };
+        }
+
+        function updateProgress(message) {
+            const progressDiv = document.getElementById('progress');
+            progressDiv.textContent = message;
         }
 
         function displayResults(results) {
             const resultsDiv = document.getElementById('results');
             resultsDiv.innerHTML = ''; // Clear previous results
 
-            results.forEach(result => {
+            if (Array.isArray(results)) {
+                results.forEach(result => {
+                    const resultElement = document.createElement('div');
+                    resultElement.innerHTML = `
+                        <p>Keyword: ${result.keyword}</p>
+                        <p>Intitle Count: ${result.intitle}</p>
+                        <p>Allintitle Count: ${result.allintitle}</p>
+                    `;
+                    resultsDiv.appendChild(resultElement);
+                });
+            } else {
                 const resultElement = document.createElement('div');
-                resultElement.innerHTML = `
-                    <p>Keyword: ${result.keyword}</p>
-                    <p>Intitle Count: ${result.intitle}</p>
-                    <p>Allintitle Count: ${result.allintitle}</p>
-                `;
+                resultElement.textContent = 'Received invalid results format';
                 resultsDiv.appendChild(resultElement);
-            });
+            }
         }
     </script>
 </body>
