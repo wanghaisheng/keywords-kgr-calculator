@@ -6,6 +6,9 @@ on:
       keywords:
         description: 'Enter keywords, separated by commas if more than one'
         required: true
+      batchId:
+        description: 'Batch identifier for retrieving results'
+        required: true
 
 jobs:
   process-keywords:
@@ -31,4 +34,4 @@ jobs:
           R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
           R2_ENDPOINT_URL: ${{ secrets.R2_ENDPOINT_URL }}
         run: |
-          python process_keywords.py "${{ github.event.inputs.keywords }}"
+          python process_keywords.py "${{ github.event.inputs.keywords }}" "${{ github.event.inputs.batchId }}"
