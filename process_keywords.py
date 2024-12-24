@@ -3,6 +3,7 @@ import json
 import time
 import os
 import boto3
+import re
 from getbrowser import setup_chrome
 
 def main(keywords):
@@ -28,16 +29,23 @@ def perform_search(keyword):
     search_query = f'intitle:"{keyword}"'
     driver.get(f'https://www.google.com/search?q={search_query}')
     element = driver.ele('#result-stats')
-    intitle_count = element.text
+    intitle_count = extract_count(element.text)
 
     # Perform the second search
     search_query = f'allintitle:"{keyword}"'
     driver.get(f'https://www.google.com/search?q={search_query}')
     element = driver.ele('#result-stats')
-    allintitle_count = element.text
+    allintitle_count = extract_count(element.text)
 
     driver.close()
     return {'keyword': keyword, 'intitle': intitle_count, 'allintitle': allintitle_count}
+
+def extract_count(result_stats):
+    # Use regex to find the number in the result stats text
+    match = re.search(r'About ([\d,]+) results', result_stats)
+    if match:
+        return match.group(1).replace(',', '')  # Remove commas for easier processing
+    return '0'
 
 def upload_results_to_r2():
     # Get environment variables
