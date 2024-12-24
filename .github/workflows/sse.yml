@@ -1,4 +1,4 @@
-name: Keyword Processing sse
+name: Keyword Processing SSE
 
 on:
   repository_dispatch:
@@ -24,17 +24,22 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install DrissionPage python-dotenv DataRecorder aiohttp loguru pandas boto3
+          pip install DrissionPage python-dotenv DataRecorder aiohttp loguru pandas boto3 selenium
 
       - name: Process Keywords
         env:
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          R2_BUCKET_NAME: your-r2-bucket
-          R2_ENDPOINT_URL: https://<your-cloudflare-r2-endpoint>
+          R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+          R2_ENDPOINT_URL: ${{ secrets.R2_ENDPOINT_URL }}
         run: |
           python process_keywords.py "${{ github.event.client_payload.keywords }}"
 
       - name: Upload results to R2
+        env:
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+          R2_ENDPOINT_URL: ${{ secrets.R2_ENDPOINT_URL }}
         run: |
           aws s3 cp results.json s3://${{ env.R2_BUCKET_NAME }}/results/${{ github.run_id }}.json --endpoint-url ${{ env.R2_ENDPOINT_URL }}
