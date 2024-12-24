@@ -3,14 +3,16 @@ import json
 import time
 import os
 import boto3
-from getbrowser import setup_chrome
+from getbrowser import setup_Chrome
 
 def main(keywords):
-    keywords = json.loads(keywords)
+    # Split keywords string into a list if it contains commas
+    keywords = keywords.split(",") if "," in keywords else [keywords]
+    
     results = []
 
     for keyword in keywords:
-        results.extend(perform_search(keyword))
+        results.extend(perform_search(keyword.strip()))  # Ensure each keyword is stripped of leading/trailing spaces
 
     with open('results.json', 'w') as f:
         json.dump(results, f)
@@ -18,12 +20,12 @@ def main(keywords):
     upload_results_to_r2()
 
 def perform_search(keyword):
-    driver = setup_chrome()
+    driver = setup_Chrome()
     search_query = f'intitle:"{keyword}"'
     driver.get(f'https://www.google.com/search?q={search_query}')
 
     results = []
-    elements = driver.find_elements_by_css_selector('#result-stats')
+    elements = driver.ele('#result-stats')
     for element in elements:
         results.append(element.text)
     
