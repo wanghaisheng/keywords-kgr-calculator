@@ -15,6 +15,7 @@ def main(keywords):
         results.extend(perform_search(keyword.strip()))  # Ensure each keyword is stripped of leading/trailing spaces
 
     with open('results.json', 'w') as f:
+        print('reesults',results)
         json.dump(results, f)
 
     upload_results_to_r2()
