@@ -1,13 +1,11 @@
 name: Keyword Processing SSE
 
 on:
-  repository_dispatch:
-    types: [keyword_dispatch]
   workflow_dispatch:
     inputs:
       keywords:
-        description: 'Enter keywords'
-        required: false
+        description: 'Enter keywords, separated by commas if more than one'
+        required: true
 
 jobs:
   process-keywords:
@@ -33,7 +31,7 @@ jobs:
           R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
           R2_ENDPOINT_URL: ${{ secrets.R2_ENDPOINT_URL }}
         run: |
-          python process_keywords.py "${{ github.event.client_payload.keywords }}"
+          python process_keywords.py "${{ github.event.inputs.keywords }}"
 
       - name: Upload results to R2
         env:
