@@ -9,77 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body class="bg-gray-100 min-h-screen p-8">
-    <div class="max-w-4xl mx-auto">
-        <!-- Header -->
-        <div class="mb-8 text-center">
-            <h1 class="text-3xl font-bold text-gray-800 mb-2">Keyword Processing Dashboard</h1>
-            <p class="text-gray-600">Process multiple keywords and track their search results</p>
-            <p class="text-sm text-gray-500 mt-2">User: wanghaisheng</p>
-        </div>
-
-        <!-- Input Section -->
-        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
-            <div class="space-y-4">
-                <!-- Text Input -->
-                <div>
-                    <label for="keyword" class="block text-sm font-medium text-gray-700 mb-2">
-                        Enter Keywords
-                    </label>
-                    <textarea 
-                        id="keyword" 
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Enter keywords separated by commas"
-                        rows="3"
-                    ></textarea>
-                </div>
-
-                <!-- File Input -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                        Or Upload CSV File
-                    </label>
-                    <div class="flex items-center justify-center w-full">
-                        <label class="w-full flex flex-col items-center px-4 py-6 bg-white rounded-lg border-2 border-gray-300 border-dashed cursor-pointer hover:bg-gray-50">
-                            <div class="flex items-center">
-                                <i class="fas fa-cloud-upload-alt text-gray-400 text-3xl mr-2"></i>
-                                <span class="text-gray-600">Choose a file</span>
-                            </div>
-                            <input id="fileInput" type="file" accept=".csv" class="hidden" />
-                        </label>
-                    </div>
-                </div>
-
-                <!-- Submit Button -->
-                <button 
-                    onclick="submitKeywords()"
-                    class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors flex items-center justify-center"
-                    id="submitButton"
-                >
-                    <i class="fas fa-play mr-2"></i>
-                    Process Keywords
-                </button>
-            </div>
-        </div>
-
-        <!-- Progress Section -->
-        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
-            <h2 class="text-xl font-semibold text-gray-800 mb-4">Progress</h2>
-            <div id="progress" class="text-gray-600">
-                <!-- Progress will be updated here -->
-            </div>
-            <div id="lastUpdate" class="text-xs text-gray-500 mt-2">
-                <!-- Last update timestamp will be shown here -->
-            </div>
-        </div>
-
-        <!-- Results Section -->
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <h2 class="text-xl font-semibold text-gray-800 mb-4">Results</h2>
-            <div id="results" class="space-y-4">
-                <!-- Results will be displayed here -->
-            </div>
-        </div>
-    </div>
+    <!-- Main content remains the same until the script section -->
 
     <script>
         class KeywordProcessor {
@@ -93,6 +23,7 @@
             }
 
             setupEventListeners() {
+                // Handle file input changes
                 document.getElementById('fileInput').addEventListener('change', (e) => {
                     const fileName = e.target.files[0]?.name;
                     if (fileName) {
@@ -100,48 +31,51 @@
                     }
                 });
 
+                // Clean up EventSource on page unload
                 window.addEventListener('beforeunload', () => {
-                    this.closeSSEConnection();
+                    this.closeEventSource();
                 });
             }
 
-            closeSSEConnection() {
-                if (this.eventSource) {
+            closeEventSource() {
+                if (this.eventSource && this.eventSource.readyState !== EventSource.CLOSED) {
                     this.eventSource.close();
                     this.eventSource = null;
                 }
             }
 
             async submitKeywords() {
-                const submitButton = document.getElementById('submitButton');
-                submitButton.disabled = true;
-                submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
+                // Reset state
+                this.retryCount = 0;
+                this.closeEventSource();
+
+                const keywordInput = document.getElementById('keyword').value;
+                const fileInput = document.getElementById('fileInput').files[0];
 
                 try {
-                    const keywordInput = document.getElementById('keyword').value;
-                    const fileInput = document.getElementById('fileInput').files[0];
-
                     const keywords = await this.getKeywords(keywordInput, fileInput);
                     if (keywords.length === 0) {
-                        throw new Error('Please enter keywords or upload a file');
+                        this.updateProgress('Please enter keywords or upload a file', 'warning');
+                        return;
                     }
 
                     await this.sendKeywordsToBackend(keywords);
                 } catch (error) {
                     console.error('Error processing keywords:', error);
                     this.updateProgress(`Error: ${error.message}`, 'error');
-                } finally {
-                    submitButton.disabled = false;
-                    submitButton.innerHTML = '<i class="fas fa-play mr-2"></i>Process Keywords';
                 }
             }
 
             async getKeywords(textInput, file) {
                 if (textInput) {
-                    return textInput.split(',').map(k => k.trim()).filter(Boolean);
+                    return textInput.split(',')
+                        .map(k => k.trim())
+                        .filter(Boolean);
                 } else if (file) {
                     const text = await this.readFile(file);
-                    return text.split(',').map(k => k.trim()).filter(Boolean);
+                    return text.split(',')
+                        .map(k => k.trim())
+                        .filter(Boolean);
                 }
                 return [];
             }
@@ -165,65 +99,77 @@
                             'Content-Type': 'application/json',
                             'Accept': 'application/json'
                         },
-                        body: JSON.stringify({ 
-                            keywords,
-                            timestamp: new Date().toISOString(),
-                            user: 'wanghaisheng'
-                        })
+                        body: JSON.stringify({ keywords })
                     });
 
                     if (!response.ok) {
                         const errorData = await response.json();
-                        throw new Error(errorData.error || 'Failed to submit keywords');
+                        throw new Error(errorData.error || `Server error: ${response.status}`);
                     }
 
                     const data = await response.json();
-                    this.updateProgress(`Processing ${data.totalBatches} batches...`, 'info');
+                    this.updateProgress(`Starting batch process: ${data.totalBatches} batches`, 'info');
                     this.startSSE(data.batchGroupId);
 
                 } catch (error) {
                     console.error('Submission error:', error);
-                    this.updateProgress(`Error: ${error.message}`, 'error');
-                    throw error;
+                    this.updateProgress(`Failed to submit keywords: ${error.message}`, 'error');
                 }
             }
 
             startSSE(batchGroupId) {
-                this.closeSSEConnection();
+                // Close existing connection if any
+                this.closeEventSource();
 
-                this.eventSource = new EventSource(`${this.apiUrl}/results?batchGroupId=${batchGroupId}`);
-                
-                this.eventSource.onmessage = (event) => {
-                    try {
-                        const data = JSON.parse(event.data);
-                        this.handleSSEMessage(data);
-                        this.updateLastUpdateTime(data.timestamp);
-                    } catch (error) {
-                        console.error('Error parsing SSE message:', error);
-                        this.updateProgress('Error processing server message', 'error');
-                    }
-                };
+                try {
+                    this.eventSource = new EventSource(
+                        `${this.apiUrl}/results?batchGroupId=${batchGroupId}`
+                    );
 
-                this.eventSource.onerror = (error) => {
-                    console.error('SSE connection error:', error);
-                    
-                    if (this.eventSource.readyState === EventSource.CLOSED) {
-                        if (this.retryCount < this.maxRetries) {
-                            this.retryCount++;
-                            this.updateProgress(`Connection lost. Retrying (${this.retryCount}/${this.maxRetries})...`, 'warning');
-                            setTimeout(() => this.startSSE(batchGroupId), this.retryDelay);
-                        } else {
-                            this.updateProgress('Connection failed after multiple attempts', 'error');
-                            this.closeSSEConnection();
+                    this.eventSource.onopen = () => {
+                        console.log('SSE connection established');
+                        this.updateProgress('Connected to server', 'success');
+                        this.retryCount = 0; // Reset retry count on successful connection
+                    };
+
+                    this.eventSource.onmessage = (event) => {
+                        try {
+                            const data = JSON.parse(event.data);
+                            this.handleSSEMessage(data);
+                        } catch (error) {
+                            console.error('Error parsing SSE message:', error);
+                            this.updateProgress('Error processing server message', 'error');
                         }
-                    }
-                };
+                    };
 
-                this.eventSource.onopen = () => {
-                    console.log('SSE connection established');
-                    this.retryCount = 0;
-                    this.updateProgress('Connected to server', 'success');
-                };
+                    this.eventSource.onerror = (error) => {
+                        console.error('SSE connection error:', error);
+                        this.handleSSEError(batchGroupId);
+                    };
+
+                } catch (error) {
+                    console.error('Error creating EventSource:', error);
+                    this.updateProgress('Failed to connect to server', 'error');
+                }
+            }
+
+            handleSSEError(batchGroupId) {
+                this.closeEventSource();
+
+                if (this.retryCount < this.maxRetries) {
+                    this.retryCount++;
+                    const delay = this.retryDelay * this.retryCount;
+                    this.updateProgress(
+                        `Connection lost. Retrying in ${delay/1000} seconds... (Attempt ${this.retryCount}/${this.maxRetries})`,
+                        'warning'
+                    );
+                    setTimeout(() => this.startSSE(batchGroupId), delay);
+                } else {
+                    this.updateProgress(
+                        'Connection failed after multiple attempts. Please try again later.',
+                        'error'
+                    );
+                }
             }
 
             handleSSEMessage(data) {
@@ -244,12 +190,14 @@
                         break;
                     case 'completed':
                         this.updateProgress('Processing completed', 'success');
-                        this.closeSSEConnection();
+                        this.closeEventSource();
                         break;
                     case 'error':
                         this.updateProgress(`Error: ${data.error}`, 'error');
-                        this.closeSSEConnection();
+                        this.closeEventSource();
                         break;
+                    default:
+                        console.warn('Unknown message status:', data.status);
                 }
             }
 
@@ -257,29 +205,24 @@
                 const progressDiv = document.getElementById('progress');
                 const icons = {
                     info: 'fa-info-circle text-blue-500',
-                    error: 'fa-exclamation-circle text-red-500',
                     success: 'fa-check-circle text-green-500',
-                    warning: 'fa-exclamation-triangle text-yellow-500'
+                    warning: 'fa-exclamation-circle text-yellow-500',
+                    error: 'fa-exclamation-triangle text-red-500'
                 };
 
                 progressDiv.innerHTML = `
                     <div class="flex items-center space-x-2">
                         <i class="fas ${icons[type]}"></i>
-                        <span>${message}</span>
+                        <span class="flex-1">${this.escapeHtml(message)}</span>
+                        <span class="text-xs text-gray-500">${new Date().toLocaleTimeString()}</span>
                     </div>
                 `;
-            }
-
-            updateLastUpdateTime(timestamp) {
-                const lastUpdateDiv = document.getElementById('lastUpdate');
-                const date = new Date(timestamp);
-                lastUpdateDiv.textContent = `Last updated: ${date.toLocaleString()} UTC`;
             }
 
             displayResults(results) {
                 const resultsDiv = document.getElementById('results');
                 resultsDiv.innerHTML = results.map(result => `
-                    <div class="bg-gray-50 p-4 rounded-lg">
+                    <div class="bg-gray-50 p-4 rounded-lg hover:bg-gray-100 transition-colors">
                         <div class="grid grid-cols-3 gap-4">
                             <div>
                                 <span class="text-sm text-gray-500">Keyword</span>
@@ -287,15 +230,12 @@
                             </div>
                             <div>
                                 <span class="text-sm text-gray-500">Intitle Count</span>
-                                <p class="font-medium">${result.intitle.toLocaleString()}</p>
+                                <p class="font-medium">${result.intitle || 0}</p>
                             </div>
                             <div>
                                 <span class="text-sm text-gray-500">Allintitle Count</span>
-                                <p class="font-medium">${result.allintitle.toLocaleString()}</p>
+                                <p class="font-medium">${result.allintitle || 0}</p>
                             </div>
-                        </div>
-                        <div class="text-xs text-gray-500 mt-2">
-                            Processed: ${new Date(result.timestamp).toLocaleString()} UTC
                         </div>
                     </div>
                 `).join('');
