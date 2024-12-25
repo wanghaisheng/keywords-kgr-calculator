@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Keyword Processing Dashboard</title>
-    <!-- Development only - Replace with local installation for production -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
@@ -81,8 +80,6 @@
         </div>
     </div>
 
-
-
     <script>
         class KeywordProcessor {
             constructor() {
@@ -95,7 +92,6 @@
             }
 
             setupEventListeners() {
-                // Handle file input changes
                 document.getElementById('fileInput').addEventListener('change', (e) => {
                     const fileName = e.target.files[0]?.name;
                     if (fileName) {
@@ -103,7 +99,6 @@
                     }
                 });
 
-                // Clean up EventSource on page unload
                 window.addEventListener('beforeunload', () => {
                     this.closeEventSource();
                 });
@@ -117,10 +112,9 @@
             }
 
             async submitKeywords() {
-                // Reset state
                 this.retryCount = 0;
                 this.closeEventSource();
-
+                
                 const keywordInput = document.getElementById('keyword').value;
                 const fileInput = document.getElementById('fileInput').files[0];
 
@@ -164,13 +158,13 @@
             async sendKeywordsToBackend(keywords) {
                 try {
                     this.updateProgress('Submitting keywords...', 'info');
-                    
                     const response = await fetch(`${this.apiUrl}/submit`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                             'Accept': 'application/json'
                         },
+                        credentials: 'include',
                         body: JSON.stringify({ keywords })
                     });
 
@@ -182,7 +176,6 @@
                     const data = await response.json();
                     this.updateProgress(`Starting batch process: ${data.totalBatches} batches`, 'info');
                     this.startSSE(data.batchGroupId);
-
                 } catch (error) {
                     console.error('Submission error:', error);
                     this.updateProgress(`Failed to submit keywords: ${error.message}`, 'error');
@@ -190,18 +183,18 @@
             }
 
             startSSE(batchGroupId) {
-                // Close existing connection if any
                 this.closeEventSource();
 
                 try {
                     this.eventSource = new EventSource(
-                        `${this.apiUrl}/results?batchGroupId=${batchGroupId}`
+                        `${this.apiUrl}/results?batchGroupId=${batchGroupId}`,
+                        { withCredentials: true }
                     );
 
                     this.eventSource.onopen = () => {
                         console.log('SSE connection established');
                         this.updateProgress('Connected to server', 'success');
-                        this.retryCount = 0; // Reset retry count on successful connection
+                        this.retryCount = 0;
                     };
 
                     this.eventSource.onmessage = (event) => {
@@ -218,7 +211,6 @@
                         console.error('SSE connection error:', error);
                         this.handleSSEError(batchGroupId);
                     };
-
                 } catch (error) {
                     console.error('Error creating EventSource:', error);
                     this.updateProgress('Failed to connect to server', 'error');
@@ -227,7 +219,7 @@
 
             handleSSEError(batchGroupId) {
                 this.closeEventSource();
-
+                
                 if (this.retryCount < this.maxRetries) {
                     this.retryCount++;
                     const delay = this.retryDelay * this.retryCount;
@@ -246,7 +238,7 @@
 
             handleSSEMessage(data) {
                 console.log('SSE message:', data);
-
+                
                 switch (data.status) {
                     case 'connected':
                         this.updateProgress('Connected to server', 'success');
