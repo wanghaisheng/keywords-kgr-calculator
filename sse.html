@@ -164,12 +164,13 @@
                             'Content-Type': 'application/json',
                             'Accept': 'application/json'
                         },
+                        mode: 'cors',
                         credentials: 'include',
                         body: JSON.stringify({ keywords })
                     });
 
                     if (!response.ok) {
-                        const errorData = await response.json();
+                        const errorData = await response.json().catch(() => ({}));
                         throw new Error(errorData.error || `Server error: ${response.status}`);
                     }
 
@@ -186,10 +187,12 @@
                 this.closeEventSource();
 
                 try {
-                    this.eventSource = new EventSource(
-                        `${this.apiUrl}/results?batchGroupId=${batchGroupId}`,
-                        { withCredentials: true }
-                    );
+                    const url = new URL(`${this.apiUrl}/results`);
+                    url.searchParams.set('batchGroupId', batchGroupId);
+
+                    this.eventSource = new EventSource(url.toString(), {
+                        withCredentials: true
+                    });
 
                     this.eventSource.onopen = () => {
                         console.log('SSE connection established');
@@ -281,6 +284,10 @@
                         <span class="text-xs text-gray-500">${new Date().toLocaleTimeString()}</span>
                     </div>
                 `;
+
+                // Update last update timestamp
+                document.getElementById('lastUpdate').textContent = 
+                    `Last updated: ${new Date().toLocaleString()}`;
             }
 
             displayResults(results) {
